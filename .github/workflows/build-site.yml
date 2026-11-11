@@ -1,0 +1,29 @@
+name: Build site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "scripts/**"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Rebuild index.html from the markdown source
+        run: python3 scripts/build_site.py docs/existenz_wp.md index.html
+      - name: Commit the regenerated site
+        run: |
+          git config user.name "existenz-bot"
+          git config user.email "actions@github.com"
+          git add index.html
+          git diff --cached --quiet && echo "No changes" || git commit -m "Rebuild site from updated source"
+          git push
