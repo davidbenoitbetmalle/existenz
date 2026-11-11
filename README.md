@@ -6,7 +6,7 @@ currency that recognizes every human existence, deliberately published with
 its known limits stated openly.
 
 The white paper is published as a single-page website on GitHub Pages:
-`https://<owner>.github.io/existenz/`
+[`https://<owner>.github.io/existenz/`](https://davidbenoitbetmalle.github.io/existenz/)
 
 ## Repository structure
 
