@@ -7,27 +7,37 @@ challenge the design are as welcome as improvements.
 
 You do not need to be a developer, and you do not need to install anything.
 
-## The simplest path: edit in your browser
+## First: say it in Discussions
+
+The primary place to contribute today is the
+[Discussions](https://github.com/davidbenoitbetmalle/existenz/discussions)
+tab. If you have read part of the paper and you disagree, or you think
+something is wrong or unclear, open a discussion:
+
+- A paragraph with your objection, and the section or annex you are
+  challenging.
+- Arithmetic, field data or a citation when you have them: an objection
+  with a number in it is worth a page of opinion.
+- French is explicitly welcome; maintainers will summarize threads that
+  change the design into English in the paper.
+
+Start with the pinned discussion
+["Where this paper is most likely to be wrong: three open questions"](https://github.com/davidbenoitbetmalle/existenz/discussions/2)
+if your objection fits one of them.
+
+## Second: propose a text change
+
+When a discussion converges on a concrete change to the paper, the natural
+next step is a text proposal:
 
 1. Open `docs/existenz_wp.md` in this repository.
 2. Click the pencil icon at the top right of the file.
 3. Edit the text like any document. GitHub handles everything technical:
    it creates the fork and the pull request for you automatically.
 4. Click "Propose changes" and describe in one or two sentences what you
-   changed and, if you are challenging the design, why the current text is
-   wrong.
+   changed and why, referencing the discussion it came from.
 
-That is all. A reviewer merges the change; the automated workflow then
-rebuilds the published site. Never edit `index.html` directly: it is
-generated from the markdown source.
-
-## To think out loud: Discussions
-
-Use the Discussions tab for open questions, objections, and exploratory
-thinking that does not yet translate into a proposed text change. This is
-the right place for a first reaction to the paper, for disagreement with a
-design choice, or for asking what the authors believe is wrong in a given
-section. A good discussion today becomes a pull request later.
+Never edit `index.html` directly: it is generated from the markdown source.
 
 ## Issues
 
