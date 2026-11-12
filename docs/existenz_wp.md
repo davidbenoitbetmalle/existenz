@@ -3,6 +3,8 @@
 
 ## A Fair Global Currency: Providing a Basic Human Right Through Virtual Currency
 
+*A project by and for utopian and agnostic citizens of the world.*
+
 ## Abstract / Executive Summary
 
 The Existenz (EXZ) project proposes a fair global virtual currency designed to guarantee, through monetary design itself, a subsistence floor for every human being. Inspired by Article 3 of the Universal Declaration of Human Rights ("Everyone has the right to life, liberty and security of person"), Existenz distributes an equal amount of currency to every verified human existence, caps individual accumulation, and applies a controlled melting (demurrage) mechanism that recycles wealth into a global solidarity fund. This white paper formalizes the concept presented in the original Existenz presentation, develops its monetary mechanics, examines two distribution scenarios, addresses governance, identity and technical requirements, and provides an economic and risk analysis together with an implementation roadmap. Annexes A to G propose robust protocols for the structural weaknesses
