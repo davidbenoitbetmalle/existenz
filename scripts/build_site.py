@@ -4,8 +4,8 @@
 Usage: python3 scripts/build_site.py docs/existenz_wp.md index.html
 
 The script is dependency-free (standard library only) so it runs both locally
-and in GitHub Actions. It produces one self-contained index.html: sticky
-table of contents, inline CSS, no external assets.
+and in GitHub Actions. It produces one self-contained index.html: fixed
+left-side table of contents, inline CSS, no external assets.
 """
 import html
 import re
@@ -68,30 +68,35 @@ def parse_markdown(text):
     return blocks
 
 
-CSS = """:root{--ink:#1a2333;--muted:#5a6578;--accent:#1f5fa8;--bg:#fdfdfb;--line:#e3e6ec;--max:860px}
+CSS = """:root{--ink:#1a2333;--muted:#5a6578;--accent:#1f5fa8;--bg:#fdfdfb;--line:#e3e6ec;--max:860px;--navw:280px}
 *{box-sizing:border-box}
 body{margin:0;font-family:Georgia,'Times New Roman',serif;background:var(--bg);color:var(--ink);line-height:1.65;font-size:17px}
-header.hero{background:var(--ink);color:#fff;padding:64px 24px 56px;text-align:center}
+header.hero{background:var(--ink);color:#fff;padding:64px 24px 56px;text-align:center;margin-left:var(--navw)}
 header.hero h1{font-size:2.4rem;margin:0 0 8px;letter-spacing:.5px}
 header.hero p{margin:0 auto;max-width:640px;color:#c6cfdd;font-size:1.15rem;font-style:italic}
-nav{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10;max-height:44vh;overflow:auto}
-nav .inner{max-width:var(--max);margin:0 auto;padding:10px 20px}
+nav{background:#fff;border-right:1px solid var(--line);position:fixed;top:0;left:0;bottom:0;width:var(--navw);overflow:auto;padding:24px 18px;z-index:10}
 nav summary{cursor:pointer;font-weight:bold;font-family:system-ui,sans-serif;font-size:.9rem;color:var(--accent);list-style:none}
-nav ul{columns:2;column-gap:40px;padding:8px 0 4px;margin:6px 0 0;list-style:none}
-nav li{margin:2px 0;break-inside:avoid}
+nav ul{padding:8px 0 4px;margin:6px 0 0;list-style:none}
+nav li{margin:2px 0}
 nav li.lvl2{padding-left:14px;font-size:.85rem}
 nav a{color:var(--muted);text-decoration:none}
 nav a:hover{color:var(--accent);text-decoration:underline}
-main{max-width:var(--max);margin:0 auto;padding:40px 24px 80px}
-h2{font-family:system-ui,sans-serif;font-size:1.6rem;color:var(--accent);border-bottom:2px solid var(--line);padding-bottom:6px;margin-top:56px;scroll-margin-top:50px}
+main{max-width:var(--max);padding:40px 48px 80px;margin-left:calc(var(--navw) + (100% - var(--navw) - var(--max))/2)}
+h2{font-family:system-ui,sans-serif;font-size:1.6rem;color:var(--accent);border-bottom:2px solid var(--line);padding-bottom:6px;margin-top:56px;scroll-margin-top:20px}
 h3{font-family:system-ui,sans-serif;font-size:1.15rem;color:#33415e;margin-top:32px}
 table{border-collapse:collapse;width:100%;margin:20px 0;font-size:.92rem;font-family:system-ui,sans-serif}
 th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
 th{background:#f0f3f8}
 ul{padding-left:24px}
 li{margin:6px 0}
-footer{border-top:1px solid var(--line);color:var(--muted);text-align:center;padding:24px;font-size:.85rem;font-family:system-ui,sans-serif}
-@media(max-width:720px){nav ul{columns:1}header.hero h1{font-size:1.7rem}}"""
+footer{border-top:1px solid var(--line);color:var(--muted);text-align:center;padding:24px;font-size:.85rem;font-family:system-ui,sans-serif;margin-left:var(--navw)}
+@media(max-width:1100px){main{margin-left:var(--navw);padding:40px 24px 80px}}
+@media(max-width:820px){
+nav{position:sticky;top:0;bottom:auto;width:auto;max-height:44vh;border-right:none;border-bottom:1px solid var(--line);padding:10px 20px}
+header.hero,main,footer{margin-left:0}
+header.hero h1{font-size:1.7rem}
+main{padding:40px 24px 80px}
+}"""
 
 
 def build(blocks):
@@ -150,8 +155,8 @@ def build(blocks):
 </style>
 </head>
 <body>
+<nav><details open><summary>Table of contents</summary><ul>{toc_html}</ul></details></nav>
 <header class="hero"><h1>{html.escape(title)}</h1><p>{html.escape(subtitle)}</p></header>
-<nav><div class="inner"><details open><summary>Table of contents</summary><ul>{toc_html}</ul></details></div></nav>
 <main>{main_html}</main>
 <footer>Existenz White Paper, v3. A protocol-level proposal, published with its known limits stated openly.</footer>
 </body></html>"""
