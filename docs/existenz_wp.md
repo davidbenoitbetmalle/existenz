@@ -229,7 +229,7 @@ A currency issued to every human, outside any state budget, is structurally in t
 
 ## 11.6 The merchant economy is load-bearing
 
-The entire offline verification layer (Annex E) and the entire conversion layer (Annex F) rest on small merchants finding their role profitable. If the commission, margins and conversion liquidity fail to compensate the operational burden (captures, statements, audits, stake), merchants do not adopt, and Existenz becomes a currency that exists but cannot be spent anywhere. Merchant adoption is the single point of failure of the project.
+The entire offline verification layer (Annex E) and the entire conversion layer (Annex F) rest on small merchants finding their role profitable. If the commission, margins and conversion liquidity fail to compensate the operational burden (captures, statements, audits, stake), merchants do not adopt, and Existenz becomes a currency that exists but cannot be spent anywhere. Merchant adoption is the single point of failure of the project. This is not a hypothetical risk: in the Circles UBI pilot in Berlin (2021-2023), the closest documented precedent, the currency lived and died with its merchant economy, and when the cooperative that subsidized merchant conversion into euros ran out of funding, the pilot ended with it (see the references).
 
 ## 11.7 Dependence on device infrastructure
 
@@ -557,7 +557,7 @@ it belongs: on the one who would profit, not on the person in need.
 ## F.7 Why same-day, capped, indexed conversion at exactly one hop is the right trade-off
 
 Pure deferral would kill adoption (no merchant accepts a currency they cannot convert); a free float would kill the currency (EXZ becomes a speculative asset and the fund is arbitraged); a value chain would multiply fraud interfaces and float a second, unanchored exchange rate. The design keeps all three failure modes closed: intraday security comes from Annex E (presence templates and known exposure), liquidity comes same-day at a fixed indexed rate through licensed agents, integrity is reconciled over weeks through confirmation, statistics and stake, extended offline claims are preserved by the day-chain and relay mechanisms of E.11 rather than expiring in silence, and the currency's journey ends, by construction, at the merchant's conversion account. The merchant's risk is known in the morning, their income is fair, explicit and immediately usable in local currency, and the global
-fund's exposure is always bounded by the physical arithmetic of verified presences.
+fund's exposure is always bounded by the physical arithmetic of verified presences. The nearest documented precedent prices the alternative: the Circles Berlin pilot subsidized merchant conversion out of grant money, with no ration and no solvency model behind it, and the guarantee stopped exactly when the funding did (see the references).
 
 # Annex G - Global Fund Solvency Model
 
@@ -595,7 +595,7 @@ The endowment R covers only the buffer, not the flow: in steady state, whatever 
 
 - Coverage rule: R >= H x D at all times, per zone and globally, with H a parametric rule (proposed initial H = 90 days). At global scale, u = 60%, v = 80%, this means a standing endowment on the order of 0.43 T USD.
 - Inflow rule: conversion guarantees may only be extended to a zone as long as committed external inflows for that zone cover its projected steady-state payout; new zones are onboarded only when their H x D is endowment-covered (a rollout gate for Section 10, step 5).
-- Publication: the coverage ratio R / (H x D) is published continuously on-chain; when it degrades below 1, conversion rations by transparent queue (elder merchants with confirmed transactions first), and the queue state is public, so rationing is governed in the open rather than discovered as failure.
+- Publication: the coverage ratio R / (H x D) is published continuously on-chain; when it degrades below 1, conversion rations by transparent queue (elder merchants with confirmed transactions first), and the queue state is public, so rationing is governed in the open rather than discovered as failure. The ratio and the queue are also displayed live in the merchant app, in the same interface where the day is declared: the figure is an instrument of expectation management as much as accounting, because perceived precarity accelerates spending, and the honest answer to it is visibility, not silence.
 
 ## G.4 What the levers actually are
 
@@ -629,7 +629,7 @@ The five founding rules guarantee a goods-denominated floor: 2 EXZ buy a basic m
 
 Conversion into local currency is a different object, and the document states the difference as a definition rather than a caveat: conversion is a merchant service, backed by the global fund acting as buyer of last resort within a published, coverage-indexed ration (G.3). The ration is real: bounded by the operational-window demurrage of settlement credit (unconverted units return to the commons), by the per-merchant cap band of F.4, by the zone rollout gates of G.3, and reduced in volume by the merchant circuit of H.2. A merchant within the ration converts same-day at the anchored rate; a merchant beyond the ration queues transparently and is paid as the coverage ratio recovers.
 
-This redefinition does not weaken the design; it prices it. The alternative, an unconditional conversion guarantee, is arithmetically refuted by Annex G. The honest formulation is: Existenz can guarantee the meal universally, and the meal is what a subsistence floor is.
+This redefinition does not weaken the design; it prices it. The alternative, an unconditional conversion guarantee, is arithmetically refuted by Annex G. It is also refuted empirically: the Circles Berlin pilot honored merchant conversion out of subsidization rather than endowment, and when the subsidy ended, so did the guarantee (see the references). The honest formulation is: Existenz can guarantee the meal universally, and the meal is what a subsistence floor is.
 
 ## H.2 The bounded merchant circuit
 
@@ -675,6 +675,7 @@ A future extension would be verified lenders operating inside the protocol, conv
 - Offline hash-chain timestamping and delay-tolerant networking (basis of the day-chain trace and opportunistic relay sync of Annex E.11).
 - Universal basic income literature and pilot experiments.
 - UBI pilot findings on debt, advance-selling of future transfers and garnishment practice (basis of H.4).
+- Longo, Criscione, Linares and Avanzo, Impact of a Blockchain-based Universal Basic Income Pilot: The Case of Circles UBI Currency (arXiv 2504.02714, 2025). First qualitative study of a blockchain-based basic-income community currency (Berlin, 2021-2023); cited for the merchant-economy findings (11.6), the failure of grant-funded conversion (F.7, H.1) and the coverage-transparency rule (G.3).
 - Public credit registry and payroll-lending practice (basis of the outside-protocol lending model of H.4).
 - Humanitarian food-basket costing practice (basis of the p = 0.60 USD PPP per meal estimate of Annex G).
 - The original Existenz presentation, "Existenz: a fair global currency".
