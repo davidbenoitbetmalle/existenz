@@ -2,7 +2,7 @@
 
 ## Start here
 
-**[Where this paper is most likely to be wrong: three open questions](https://github.com/davidbenoitbetmalle/existenz/discussions/1)**
+**[Where this paper is most likely to be wrong: three open questions](https://github.com/davidbenoitbetmalle/existenz/discussions/2)**
 (planetary-scale identity, solvability arithmetic, melting parameters that
 have never been measured)
 
