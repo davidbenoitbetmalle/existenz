@@ -15,6 +15,12 @@
 //! - Annex F: single-hop rule, settlement credit, cap band, commission
 //! - Annex G: payout formula, coverage ratio, reserve and rollout gate
 //! - Annex H.2: bounded merchant circuit
+//! - Revised Annex F.4 (proposed, pending paper integration): the
+//!   solidarity scale rule. Declared covers are saturated at the zone's
+//!   class table size (tanh soft cap), the zone's daily cover quota caps
+//!   total counting at quota x (1 + headroom) through a degressive band,
+//!   and a merchant declaring beyond its adjusted table sees its settlement
+//!   credit melt at an accelerated rate.
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
@@ -64,6 +70,14 @@ pub struct Params {
     pub reserve_horizon_days: u64,
     /// Days of payout history used to estimate the steady-state daily payout.
     pub payout_avg_days: u64,
+    /// Zone quota headroom, in bps (revised F.4): the zone's total counted
+    /// covers cap at quota x (1 + headroom), and a merchant overshoots its
+    /// adjusted table at table x (1 + headroom). Proposed: 20%.
+    pub zone_headroom_bps: u64,
+    /// Accelerated melting of an overshooting merchant's settlement credit,
+    /// in bps per day, replacing the melt-free operational window for that
+    /// volume (revised F.4). Proposed: 5% per day.
+    pub overshoot_melt_bps_per_day: u64,
 }
 
 impl Default for Params {
@@ -85,6 +99,8 @@ impl Default for Params {
             integrity_alpha_bps: 2_000,
             reserve_horizon_days: 90,
             payout_avg_days: 7,
+            zone_headroom_bps: 2_000,
+            overshoot_melt_bps_per_day: 500,
         }
     }
 }
@@ -123,6 +139,34 @@ pub fn projected_daily_payout_cents(
     let two_p = 2.0 * p_cents as f64;
     let cc = 1.0 + commission_bps as f64 / 10_000.0;
     n as f64 * u * v * two_p * cc
+}
+
+/// Fixed-point scale of `tanh_fixed` (1e12).
+pub const TANH_FP: u128 = 1_000_000_000_000;
+
+/// Deterministic integer tanh(num/den), returned in TANH_FP fixed point.
+/// The solidarity scale rule (revised F.4) needs a saturating soft cap with
+/// no cliff: identity near zero, asymptote at one. Uses
+/// tanh(x) = (e^(2x) - 1) / (e^(2x) + 1) with a fixed-point Taylor series
+/// of the exponential; for num/den >= 10 the deficit from one is below
+/// 8e-10, far below the integer rounding that follows, so it saturates.
+pub fn tanh_fixed(num: u64, den: u64) -> u128 {
+    if den == 0 || num >= den.saturating_mul(10) {
+        return TANH_FP;
+    }
+    // t = 2 x num/den in fixed point (t < 20 in real units).
+    let t = 2u128 * u128::from(num) * TANH_FP / u128::from(den);
+    // e^t by Taylor, term by term, all in fixed point.
+    let mut term = TANH_FP;
+    let mut sum = TANH_FP;
+    for k in 1..=80u128 {
+        term = term * t / (k * TANH_FP);
+        if term == 0 {
+            break;
+        }
+        sum += term;
+    }
+    (sum - TANH_FP) * TANH_FP / (sum + TANH_FP)
 }
 
 /// A human account holder. Merchants hold one of these too (Annex F.2:
@@ -172,6 +216,9 @@ pub struct Merchant {
     pub converted_cents_total: Cents,
     pub commission_cents_total: Cents,
     pub queued_cents: Cents,
+    /// True while the merchant declared beyond its adjusted table
+    /// (table x (1 + headroom), revised F.4): accelerated melting applies.
+    pub overshoot: bool,
 }
 
 impl Merchant {
@@ -189,6 +236,7 @@ impl Merchant {
             converted_cents_total: 0,
             commission_cents_total: 0,
             queued_cents: 0,
+            overshoot: false,
         }
     }
     pub fn confirmed_total(&self) -> Mexz {
@@ -245,6 +293,7 @@ pub struct Fund {
 #[derive(Clone, Debug, Default)]
 pub struct WorldStats {
     pub melted_mexz: Mexz,
+    pub overshoot_melted_mexz: Mexz,
     pub excess_to_fund_mexz: Mexz,
     pub reverted_mexz: Mexz,
     pub death_settlements_mexz: Mexz,
@@ -259,6 +308,17 @@ pub struct Zone {
     pub meal_price_cents: u64,
     /// Plausible served population per merchant location (Annex F.4 Cap 2): P.
     pub plausible_population: u64,
+    /// Solidarity table size of the zone's class (revised F.4): the
+    /// tanh saturation point of a merchant's counted covers. 0 = uncapped.
+    pub scale_cap_presences: u64,
+    /// Daily cover quota of the zone (revised F.4), from its malnutrition
+    /// class profile: total counted covers cap at quota x (1 + headroom)
+    /// through the degressive band. 0 = no zone quota.
+    pub quota_covers: u64,
+    /// Cover position declared for conversion today (revised F.4 band).
+    pub covers_declared_today: u64,
+    /// Covers counted today (revised F.4 band).
+    pub covers_counted_today: u64,
     pub persons: Vec<Person>,
     pub merchants: Vec<Merchant>,
     /// id -> position maps, so lookups stay O(1) at zone scale.
@@ -279,6 +339,7 @@ pub struct DayStats {
     pub melted_mexz: Mexz,
     pub excess_mexz: Mexz,
     pub reverted_mexz: Mexz,
+    pub overshoot_melted_mexz: Mexz,
 }
 
 #[derive(Clone, Debug)]
@@ -304,7 +365,10 @@ pub struct ConversionReceipt {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CapReason {
     NotCapped,
+    /// The merchant's own table saturation (tanh over declared covers).
     PhysicalCap,
+    /// The zone's daily cover quota, through the degressive band.
+    ZoneQuotaCap,
     PlausibilityCap,
     TierCap,
     Request,
@@ -357,6 +421,8 @@ impl World {
         name: &str,
         meal_price_cents: u64,
         plausible_population: u64,
+        scale_cap_presences: u64,
+        quota_covers: u64,
         allocated_cents: Cents,
         inflow_cents_per_day: Cents,
     ) -> Result<(), ExzError> {
@@ -368,6 +434,10 @@ impl World {
             name: name.to_string(),
             meal_price_cents,
             plausible_population,
+            scale_cap_presences,
+            quota_covers,
+            covers_declared_today: 0,
+            covers_counted_today: 0,
             persons: Vec::new(),
             merchants: Vec::new(),
             person_index: HashMap::new(),
@@ -415,6 +485,9 @@ impl World {
         let floor = params.floor_mexz();
 
         for z in 0..self.zones.len() {
+            // A new day of the solidarity quota band (revised F.4).
+            self.zones[z].covers_declared_today = 0;
+            self.zones[z].covers_counted_today = 0;
             // The new day starts with an empty presence book; yesterday's
             // presences become the declared statement that Cap 1 of the
             // day's conversion requests is checked against.
@@ -495,6 +568,30 @@ impl World {
                     .retain(|(d, _)| day.saturating_sub(*d) <= params.circuit_window_days);
             }
 
+            // Solidarity scale overshoot (revised F.4): a merchant that
+            // declared beyond its adjusted table (table x (1 + headroom))
+            // is in overshoot for the day; its confirmed settlement credit
+            // melts at the accelerated rate instead of enjoying the
+            // melt-free operational window. The melted units join the
+            // EXZ commons, like all melting.
+            let p_max = self.zones[z].scale_cap_presences;
+            let threshold = p_max + p_max * params.zone_headroom_bps / 10_000;
+            let mut overshoot_melted = 0u64;
+            for m in 0..self.zones[z].merchants.len() {
+                let merchant = &mut self.zones[z].merchants[m];
+                merchant.overshoot =
+                    merchant.presences_declared.len() as u64 > threshold;
+                if merchant.overshoot {
+                    let credit = merchant.confirmed_total();
+                    let melt =
+                        credit * params.overshoot_melt_bps_per_day / 10_000;
+                    if melt > 0 {
+                        take_from_buckets(&mut merchant.confirmed, melt);
+                        overshoot_melted += melt;
+                    }
+                }
+            }
+
             // Fund replenishment (Annex G.3 inflow rule), and close of the
             // payout ledger: today's events become one daily total.
             let zid = self.zones[z].id;
@@ -508,14 +605,16 @@ impl World {
                     zf.payout_hist.pop_front();
                 }
             }
-            self.fund.exz += excess + melted + reverted;
+            self.fund.exz += excess + melted + reverted + overshoot_melted;
             self.stats.melted_mexz += melted;
             self.stats.excess_to_fund_mexz += excess;
             self.stats.reverted_mexz += reverted;
+            self.stats.overshoot_melted_mexz += overshoot_melted;
             self.push_history(zid, DayStats {
                 melted_mexz: melted,
                 excess_mexz: excess,
                 reverted_mexz: reverted,
+                overshoot_melted_mexz: overshoot_melted,
                 ..Default::default()
             });
         }
@@ -531,6 +630,7 @@ impl World {
                 last.2.melted_mexz += row.melted_mexz;
                 last.2.excess_mexz += row.excess_mexz;
                 last.2.reverted_mexz += row.reverted_mexz;
+                last.2.overshoot_melted_mexz += row.overshoot_melted_mexz;
                 return;
             }
         }
@@ -837,13 +937,57 @@ impl World {
                 capped_by: CapReason::Request,
             });
         }
-        // The three nested caps of F.4; the binding one is the smallest.
-        let cap1 = merchant.presences_declared.len() as u64 * allowance;
+        // The solidarity scale rule (revised F.4), then the nested caps;
+        // the binding one is the smallest.
+        //
+        // Step 1, merchant table: the declared covers P saturate at the
+        // zone's class table size P_max, softly:
+        //     P_eff = P_max x tanh(P / P_max)
+        // identity for small P, asymptote P_max, no cliff. Rounded to the
+        // nearest cover, then clamped by the declared count.
+        let p_decl = merchant.presences_declared.len() as u64;
+        let integrity_bps = merchant.integrity_bps;
+        let p_max = self.zones[zi].scale_cap_presences;
+        let p_eff = if p_max == 0 {
+            p_decl
+        } else {
+            let raw = (u128::from(p_max) * tanh_fixed(p_decl, p_max)
+                + TANH_FP / 2)
+                / TANH_FP;
+            p_decl.min(raw as u64)
+        };
+        //
+        // Step 2, zone quota band: covers count at full weight up to the
+        // zone's quota Q; beyond, the marginal weight decays linearly to
+        // zero at Q x (1 + 2 x headroom). The zone's total counted covers
+        // therefore never exceed Q x (1 + headroom) (with the proposed
+        // 20% headroom: twenty percent above the quota, no cliff).
+        let quota = self.zones[zi].quota_covers;
+        let head = self.params.zone_headroom_bps;
+        let counted = if quota == 0 {
+            p_eff
+        } else {
+            let hq = quota * head / 10_000;
+            let w = quota + 2 * hq;
+            let vd = self.zones[zi].covers_declared_today;
+            let u = p_eff.min(quota.saturating_sub(vd.min(quota)));
+            let t0 = vd.max(quota);
+            let s = (vd + p_eff).min(w);
+            let n2 = if s > t0 {
+                ((w - t0) * (w - t0) - (w - s) * (w - s)) / (2 * (w - quota))
+            } else {
+                0
+            };
+            u + n2
+        };
+        self.zones[zi].covers_declared_today += p_eff;
+        self.zones[zi].covers_counted_today += counted;
+        let cap1 = counted * allowance;
         let cap2 = plausible * allowance;
         let tier_floor = tier_initial * allowance;
         let cap3 = if cap2 > tier_floor {
             tier_floor
-                + ((u128::from(cap2 - tier_floor) * u128::from(merchant.integrity_bps))
+                + ((u128::from(cap2 - tier_floor) * u128::from(integrity_bps))
                     / 10_000) as u64
         } else {
             cap2
@@ -853,7 +997,11 @@ impl World {
         let capped_by = if converted == requested_mexz {
             CapReason::NotCapped
         } else if capped == cap1 {
-            CapReason::PhysicalCap
+            if counted < p_eff {
+                CapReason::ZoneQuotaCap
+            } else {
+                CapReason::PhysicalCap
+            }
         } else if capped == cap2 {
             CapReason::PlausibilityCap
         } else if capped == cap3 {

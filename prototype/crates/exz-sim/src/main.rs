@@ -11,6 +11,9 @@
 //! - thin:   a sparse adoption zone (5k persons, u = 0.30, v = 0.50).
 //! - stress: an under-endowed zone (allocated = 0.5 x H x D, inflow = 0.3 x D)
 //!           where the ration queue and the coverage rule do visible work.
+//! - dense:  an oversubscribed fabric (demand far above its class cover
+//!           quota) where the degressive quota band visibly throttles the
+//!           zone's counting at quota + 20%.
 //!
 //! Outputs a CSV (one row per day and zone), an SVG chart, and a stdout
 //! summary with the per-person-per-year payout compared to the Annex G.1
@@ -62,6 +65,10 @@ struct ZoneSpec {
     hoarder_bps: u64,
     /// Probability that a merchant with credit circuits part of it today.
     circuit_bps: u64,
+    /// Solidarity table size of the zone's class (revised F.4): P_max.
+    scale_cap: u64,
+    /// Daily cover quota of the zone (revised F.4): Q.
+    quota_covers: u64,
     /// Endowment = allocated_coverage x H x D_projected.
     allocated_coverage: f64,
     /// Daily inflow = inflow_frac x D_projected.
@@ -75,51 +82,85 @@ impl ZoneSpec {
 }
 
 fn default_specs() -> Vec<ZoneSpec> {
+    // Malnutrition-class profiles (revised F.4): the class sets the table
+    // size P_max and the zone's daily cover quota Q. Proposed classes:
+    //   PoU < 5% (stable):       P_max = 100
+    //   PoU 5-15% (vulnerable):  P_max = 60
+    //   PoU 15-25% (alarming):   P_max = 40
+    //   PoU > 25% (critical):    P_max = 30
+    // Q is the zone's expected served covers (N x u), except where the
+    // class deliberately rations the fabric (dense).
     vec![
+        // Pilot, Annex G.5 scale, vulnerable class: dense fabric of small
+        // tables, one merchant per ~67 inhabitants.
         ZoneSpec {
             id: 1,
             name: "pilot",
             persons: 100_000,
-            merchants: 150,
+            merchants: 1_500,
             meal_price_cents: 60,
             spend_bps: 6_000,
             convert_bps: 8_000,
             hoarder_bps: 200,
             circuit_bps: 3_000,
+            scale_cap: 60,
+            quota_covers: 60_000,
             allocated_coverage: 1.0,
             inflow_frac: 1.0,
         },
+        // Thin adoption, alarming class.
         ZoneSpec {
             id: 2,
             name: "thin",
             persons: 5_000,
-            merchants: 15,
+            merchants: 45,
             meal_price_cents: 40,
             spend_bps: 3_000,
             convert_bps: 5_000,
             hoarder_bps: 200,
             circuit_bps: 3_000,
+            scale_cap: 40,
+            quota_covers: 1_500,
             allocated_coverage: 1.0,
             inflow_frac: 1.0,
         },
+        // Under-endowed, critical class: the ration queue must appear.
         ZoneSpec {
             id: 3,
             name: "stress",
             persons: 20_000,
-            merchants: 40,
+            merchants: 1_000,
             meal_price_cents: 80,
             spend_bps: 9_000,
             convert_bps: 10_000,
             hoarder_bps: 200,
             circuit_bps: 3_000,
-            // Deliberately under-endowed: the ration queue must appear.
+            scale_cap: 30,
+            quota_covers: 18_000,
             allocated_coverage: 0.5,
             inflow_frac: 0.3,
+        },
+        // Oversubscribed fabric, critical class with a quota deliberately
+        // below demand: the degressive band caps counting at Q + 20%.
+        ZoneSpec {
+            id: 4,
+            name: "dense",
+            persons: 10_000,
+            merchants: 300,
+            meal_price_cents: 50,
+            spend_bps: 5_000,
+            convert_bps: 9_000,
+            hoarder_bps: 200,
+            circuit_bps: 3_000,
+            scale_cap: 30,
+            quota_covers: 2_000,
+            allocated_coverage: 1.0,
+            inflow_frac: 1.0,
         },
     ]
 }
 
-const CHART_COLORS: [&str; 3] = ["#d95f18", "#3a6ea5", "#6b4fa0"];
+const CHART_COLORS: [&str; 4] = ["#d95f18", "#3a6ea5", "#6b4fa0", "#3a7a5a"];
 
 struct Args {
     days: u64,
@@ -186,7 +227,16 @@ fn main() {
         let allocated = (s.allocated_coverage * horizon as f64 * d_proj[i]) as i64;
         let inflow = (s.inflow_frac * d_proj[i]) as i64;
         world
-            .add_zone(s.id, s.name, s.meal_price_cents, s.plausible_population(), allocated, inflow)
+            .add_zone(
+                s.id,
+                s.name,
+                s.meal_price_cents,
+                s.plausible_population(),
+                s.scale_cap,
+                s.quota_covers,
+                allocated,
+                inflow,
+            )
             .expect("zone setup");
         for p in 0..s.persons {
             world.enroll_person(s.id, p).expect("enroll person");
@@ -206,7 +256,7 @@ fn main() {
     let mut grid: Vec<Vec<DayStats>> =
         vec![vec![DayStats::default(); n_zones]; days as usize];
     // Which conversion cap bound, per zone (Annex F.4 diagnostics).
-    let mut cap_counts: Vec<[u64; 4]> = vec![[0; 4]; n_zones];
+    let mut cap_counts: Vec<[u64; 5]> = vec![[0; 5]; n_zones];
     // Coverage ratio per (day, zone), recorded after the day's conversions.
     let mut coverage: Vec<Vec<f64>> = vec![vec![0.0; n_zones]; days as usize];
 
@@ -286,7 +336,15 @@ fn main() {
 
             // 3. End-of-day conversion: each merchant converts the v
             //    fraction of its confirmed credit (Annexes F.3 to F.5).
-            for m in 0..s.merchants {
+            //    The order is shuffled daily for fairness: both the zone
+            //    quota band and the ration budget are order-sensitive, so
+            //    no merchant may systematically convert first.
+            let mut order: Vec<u64> = (0..s.merchants).collect();
+            for i in (1..order.len()).rev() {
+                let j = rngs[zi].below((i + 1) as u64) as usize;
+                order.swap(i, j);
+            }
+            for m in order {
                 let zi_world = world
                     .zones
                     .iter()
@@ -301,8 +359,9 @@ fn main() {
                     let slot = match receipt.capped_by {
                         CapReason::NotCapped | CapReason::Request => 0,
                         CapReason::PhysicalCap => 1,
-                        CapReason::PlausibilityCap => 2,
-                        CapReason::TierCap => 3,
+                        CapReason::ZoneQuotaCap => 2,
+                        CapReason::PlausibilityCap => 3,
+                        CapReason::TierCap => 4,
                     };
                     cap_counts[zi][slot] += 1;
                 }
@@ -325,6 +384,7 @@ fn main() {
         cell.melted_mexz += row.melted_mexz;
         cell.excess_mexz += row.excess_mexz;
         cell.reverted_mexz += row.reverted_mexz;
+        cell.overshoot_melted_mexz += row.overshoot_melted_mexz;
     }
 
     // ---- outputs ----------------------------------------------------------
@@ -332,13 +392,13 @@ fn main() {
     let out_dir = Path::new(&args.out);
     fs::create_dir_all(out_dir).expect("create out dir");
 
-    let mut csv = String::from("day,zone,spent_mexz,converted_cents,commission_cents,queued_cents,melted_mexz,excess_to_fund_mexz,reverted_mexz,coverage_ratio\n");
+    let mut csv = String::from("day,zone,spent_mexz,converted_cents,commission_cents,queued_cents,melted_mexz,excess_to_fund_mexz,reverted_mexz,overshoot_melted_mexz,coverage_ratio\n");
     for (di, row_zones) in grid.iter().enumerate() {
         for (zi, cell) in row_zones.iter().enumerate() {
             let cov = coverage[di][zi];
             let cov = if cov.is_finite() { format!("{:.3}", cov) } else { "inf".to_string() };
             csv.push_str(&format!(
-                "{},{},{},{},{},{},{},{},{},{}\n",
+                "{},{},{},{},{},{},{},{},{},{},{}\n",
                 di + 1,
                 specs[zi].name,
                 cell.spent_mexz,
@@ -348,6 +408,7 @@ fn main() {
                 cell.melted_mexz,
                 cell.excess_mexz,
                 cell.reverted_mexz,
+                cell.overshoot_melted_mexz,
                 cov
             ));
         }
@@ -383,6 +444,7 @@ fn main() {
             melted_mexz: a.melted_mexz + b.melted_mexz,
             excess_mexz: a.excess_mexz + b.excess_mexz,
             reverted_mexz: a.reverted_mexz + b.reverted_mexz,
+            overshoot_melted_mexz: a.overshoot_melted_mexz + b.overshoot_melted_mexz,
         });
 
         let eff_ppy = converted as f64 / 100.0 / s.persons as f64 * (365.0 / days as f64);
@@ -390,15 +452,17 @@ fn main() {
         let final_cov = coverage[(days - 1) as usize][zi];
 
         println!("zone {} (id {}): {} persons, {} merchants, meal {}c", s.name, s.id, s.persons, s.merchants, s.meal_price_cents);
+        println!("  class profile               {:>14} covers/day quota, {}-cover tables", s.quota_covers, s.scale_cap);
         println!("  spent (single-hop)          {:>14.2} EXZ", totals.spent_mexz as f64 / 1000.0);
         println!("  converted (paid)           {:>14.2} USD", converted as f64 / 100.0);
         println!("  commission charged          {:>14.2} USD", totals.commission_cents as f64 / 100.0);
         println!("  queued (rationed)           {:>14.2} USD", queued as f64 / 100.0);
         println!("  merchant credit reverted    {:>14.2} EXZ (7-day window)", totals.reverted_mexz as f64 / 1000.0);
+        println!("  overshoot melted            {:>14.2} EXZ (accelerated, revised F.4)", totals.overshoot_melted_mexz as f64 / 1000.0);
         println!("  cap overflow to fund        {:>14.2} EXZ", totals.excess_mexz as f64 / 1000.0);
         println!("  melted (idle persons)       {:>14.2} EXZ", totals.melted_mexz as f64 / 1000.0);
-        println!("  conversion caps hit         {:>14} physical / {} plausible / {} tier",
-            cap_counts[zi][1], cap_counts[zi][2], cap_counts[zi][3]);
+        println!("  conversion caps hit         {:>14} physical / {} zone-quota / {} plausible / {} tier",
+            cap_counts[zi][1], cap_counts[zi][2], cap_counts[zi][3], cap_counts[zi][4]);
         println!("  effective payout            {:>14.2} USD/person/year", eff_ppy);
         println!("  Annex G.1 projection        {:>14.2} USD/person/year", proj_ppy);
         println!("  final coverage ratio        {:>14.3}", if final_cov.is_finite() { final_cov } else { -1.0 });
@@ -510,7 +574,7 @@ fn build_svg(specs: &[ZoneSpec], grid: &[Vec<DayStats>], coverage: &[Vec<f64>], 
         svg.push_str(&format!(
             "<polyline points=\"{}\" fill=\"none\" stroke=\"{}\" stroke-width=\"2\"/>\n",
             pts.trim_end(),
-            CHART_COLORS[zi % 3]
+            CHART_COLORS[zi % 4]
         ));
     }
     // legend
@@ -520,7 +584,7 @@ fn build_svg(specs: &[ZoneSpec], grid: &[Vec<DayStats>], coverage: &[Vec<f64>], 
             "<rect x=\"{:.0}\" y=\"{}\" width=\"12\" height=\"12\" fill=\"{}\"/>\n",
             lx,
             y1 + 26.0,
-            CHART_COLORS[zi % 3]
+            CHART_COLORS[zi % 4]
         ));
         svg.push_str(&format!(
             "<text x=\"{:.0}\" y=\"{}\" fill=\"#3a230d\">{}</text>\n",
@@ -582,7 +646,7 @@ fn build_svg(specs: &[ZoneSpec], grid: &[Vec<DayStats>], coverage: &[Vec<f64>], 
         svg.push_str(&format!(
             "<polyline points=\"{}\" fill=\"none\" stroke=\"{}\" stroke-width=\"2\"/>\n",
             pts.trim_end(),
-            CHART_COLORS[zi % 3]
+            CHART_COLORS[zi % 4]
         ));
     }
     let mut lx = margin_l;
@@ -591,7 +655,7 @@ fn build_svg(specs: &[ZoneSpec], grid: &[Vec<DayStats>], coverage: &[Vec<f64>], 
             "<rect x=\"{:.0}\" y=\"{}\" width=\"12\" height=\"12\" fill=\"{}\"/>\n",
             lx,
             y2 + 26.0,
-            CHART_COLORS[zi % 3]
+            CHART_COLORS[zi % 4]
         ));
         svg.push_str(&format!(
             "<text x=\"{:.0}\" y=\"{}\" fill=\"#3a230d\">{}</text>\n",

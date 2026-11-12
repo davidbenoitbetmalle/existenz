@@ -4,7 +4,8 @@ use exz_core::*;
 
 fn world_with_zone(allocated: Cents, inflow: Cents) -> World {
     let mut w = World::new(Params::default());
-    w.add_zone(1, "test", 60, 2_000, allocated, inflow).unwrap();
+    w.add_zone(1, "test", 60, 2_000, 1_000_000, 1_000_000_000, allocated, inflow)
+        .unwrap();
     w
 }
 
@@ -43,7 +44,8 @@ fn melting_idle_balances_above_the_floor() {
     let mut params = Params::default();
     params.floor_days = 1; // floor = 2000 mEXZ, cap = 4000 mEXZ
     let mut w = World::new(params);
-    w.add_zone(1, "test", 60, 2_000, 10_000_000, 0).unwrap();
+    w.add_zone(1, "test", 60, 2_000, 1_000_000, 1_000_000_000, 10_000_000, 0)
+            .unwrap();
     w.enroll_person(1, 10).unwrap();
     w.enroll_merchant(1, 99).unwrap();
     for _ in 0..40 {
@@ -74,7 +76,8 @@ fn activity_resets_the_melting_clock() {
     let mut params = Params::default();
     params.floor_days = 1;
     let mut w = World::new(params);
-    w.add_zone(1, "test", 60, 2_000, 10_000_000, 0).unwrap();
+    w.add_zone(1, "test", 60, 2_000, 1_000_000, 1_000_000_000, 10_000_000, 0)
+            .unwrap();
     w.enroll_person(1, 10).unwrap();
     w.enroll_merchant(1, 99).unwrap();
     for _ in 0..30 {
@@ -180,7 +183,8 @@ fn cap_one_physical_binds_conversion() {
 fn cap_two_plausibility_binds_conversion() {
     // Annex F.4 Cap 2: a sandwich cart cannot serve the whole zone.
     let mut w = world_with_zone(1_000_000_000, 0);
-    w.add_zone(2, "dense", 60, 10, 1_000_000_000, 0).unwrap();
+    w.add_zone(2, "dense", 60, 10, 1_000_000, 1_000_000_000, 1_000_000_000, 0)
+            .unwrap();
     w.enroll_merchant(2, 50).unwrap();
     for i in 0..30 {
         w.enroll_person(2, 200 + i).unwrap();
@@ -201,7 +205,8 @@ fn cap_three_tier_grows_with_integrity() {
     // Annex F.4 Cap 3: a fresh merchant is bounded at 100 daily
     // allowances; clean days raise the integrity index and the tier.
     let mut w = world_with_zone(1_000_000_000, 0);
-    w.add_zone(2, "grow", 60, 10_000, 1_000_000_000, 0).unwrap();
+    w.add_zone(2, "grow", 60, 10_000, 1_000_000, 1_000_000_000, 1_000_000_000, 0)
+            .unwrap();
     w.enroll_merchant(2, 50).unwrap();
     for i in 0..500 {
         w.enroll_person(2, 200 + i).unwrap();
@@ -257,7 +262,8 @@ fn commission_is_paid_by_the_fund_and_capped() {
     let mut params2 = Params::default();
     params2.tier_initial_allowances = 5_000;
     let mut w2 = World::new(params2);
-    w2.add_zone(1, "test", 60, 2_000, 1_000_000_000, 0).unwrap();
+    w2.add_zone(1, "test", 60, 2_000, 1_000_000, 1_000_000_000, 1_000_000_000, 0)
+            .unwrap();
     w2.enroll_merchant(1, 99).unwrap();
     for i in 0..2_000 {
         w2.enroll_person(1, 100 + i).unwrap();
@@ -353,7 +359,8 @@ fn subwallets_are_bounded_and_melt_free() {
     params.melt_bps_per_day = 500;
     params.subwallet_max_days = 11; // 22,000 mEXZ, reachable within the balance
     let mut w = World::new(params.clone());
-    w.add_zone(1, "test", 60, 2_000, 10_000_000, 0).unwrap();
+    w.add_zone(1, "test", 60, 2_000, 1_000_000, 1_000_000_000, 10_000_000, 0)
+            .unwrap();
     w.enroll_person(1, 10).unwrap();
     w.enroll_merchant(1, 99).unwrap();
     for _ in 0..30 {
@@ -466,7 +473,8 @@ fn coverage_uses_daily_payout_totals_not_event_averages() {
     // negative values. Three merchants converting on the same day must
     // collapse into a single 618-cent day total.
     let mut w = World::new(Params::default());
-    w.add_zone(1, "test", 100, 1_000, 1_000_000, 1_000).unwrap();
+    w.add_zone(1, "test", 100, 1_000, 1_000_000, 1_000_000_000, 1_000_000, 1_000)
+        .unwrap();
     for m in [10u64, 20, 30] {
         w.enroll_merchant(1, m).unwrap();
     }
@@ -509,7 +517,8 @@ fn ration_budget_is_shared_across_the_day() {
     // merchants ask 206 cents each under a 300-cent daily budget: the
     // first is paid in full, the second partially, the third nothing.
     let mut w = World::new(Params::default());
-    w.add_zone(1, "test", 100, 10_000, 1_000, 300).unwrap();
+    w.add_zone(1, "test", 100, 10_000, 1_000_000, 1_000_000_000, 1_000, 300)
+        .unwrap();
     for m in [10u64, 20, 30] {
         w.enroll_merchant(1, m).unwrap();
     }
@@ -544,4 +553,163 @@ fn ration_budget_is_shared_across_the_day() {
     assert_eq!(r3_paid, 0, "third request: budget exhausted");
     assert_eq!(r3.queued_cents, 206, "third request fully queued");
     assert_eq!(w.fund.zones.get(&1).unwrap().ration_left, 0);
+}
+
+#[test]
+fn tanh_fixed_matches_reference_values() {
+    // The soft-cap kernel of the solidarity scale rule, checked against
+    // independently computed values.
+    let close = |num: u64, den: u64, expected: f64| {
+        let got = exz_core::tanh_fixed(num, den) as f64 / 1e12;
+        assert!(
+            (got - expected).abs() < 1e-9,
+            "tanh({}/{}) = {}, expected {}",
+            num, den, got, expected
+        );
+    };
+    close(1, 1, 0.7615941559557649);
+    close(20, 30, 0.5827829453479102);
+    close(50, 30, 0.9311096086675776);
+    close(100, 30, 0.9974579674738373);
+    close(9, 1, 0.999999969540041);
+    // Identity near zero, where small merchants must be counted whole.
+    let small = exz_core::tanh_fixed(50, 1_000_000) as f64 / 1e12;
+    assert!((small - 5e-5).abs() < 1e-9);
+    // Saturation at one for large ratios.
+    assert_eq!(exz_core::tanh_fixed(10, 1), 1_000_000_000_000);
+    assert_eq!(exz_core::tanh_fixed(1_000, 1), 1_000_000_000_000);
+}
+
+#[test]
+fn scale_cap_counts_declared_covers_with_tanh() {
+    // Revised F.4, step 1: a 30-cover table counts 20 declared covers as
+    // round(30 x tanh(20/30)) = 17. The cap binds below what was received.
+    let mut w = World::new(Params::default());
+    w.add_zone(1, "test", 100, 1_000_000, 30, 1_000_000_000, 1_000_000_000, 1_000_000)
+        .unwrap();
+    w.enroll_merchant(1, 10).unwrap();
+    for i in 0..20u64 {
+        w.enroll_person(1, 100 + i).unwrap();
+    }
+    w.new_day();
+    for i in 0..20u64 {
+        w.spend(1, 100 + i, 10, 2_000).unwrap();
+    }
+    w.new_day();
+    let r = w.convert(1, 10, 200_000).unwrap();
+    assert_eq!(r.converted_mexz, 17 * 2_000, "17 counted covers");
+    assert_eq!(r.capped_by, CapReason::PhysicalCap);
+}
+
+#[test]
+fn a_hundred_cover_restaurant_counts_no_more_than_its_table() {
+    // Revised F.4, step 1 at saturation: a 30-cover table counts 50
+    // declared covers as 28 and 100 as 30: doubling the clientele past the
+    // table adds almost nothing. The big venue has no rational reason to
+    // absorb the flow.
+    let mut run = |covers: u64| -> (u64, CapReason) {
+        let mut w = World::new(Params::default());
+        w.add_zone(1, "test", 100, 1_000_000, 30, 1_000_000_000, 1_000_000_000, 1_000_000)
+            .unwrap();
+        w.enroll_merchant(1, 10).unwrap();
+        for i in 0..covers {
+            w.enroll_person(1, 100 + i).unwrap();
+        }
+        w.new_day();
+        for i in 0..covers {
+            w.spend(1, 100 + i, 10, 2_000).unwrap();
+        }
+        w.new_day();
+        let r = w.convert(1, 10, 1_000_000_000).unwrap();
+        (r.converted_mexz, r.capped_by)
+    };
+    let (converted_50, by_50) = run(50);
+    let (converted_100, by_100) = run(100);
+    assert_eq!(converted_50, 28 * 2_000); // round(30 x tanh(50/30)) = 28
+    assert_eq!(converted_100, 30 * 2_000); // round(30 x tanh(100/30)) = 30
+    assert_eq!(by_50, CapReason::PhysicalCap);
+    assert_eq!(by_100, CapReason::PhysicalCap);
+    // Doubling from 50 to 100 covers adds only two counted covers.
+    assert_eq!(converted_100 - converted_50, 2 * 2_000);
+}
+
+#[test]
+fn zone_quota_caps_counting_twenty_percent_above_quota() {
+    // Revised F.4, step 2: with a 1000-cover quota and 20% headroom, the
+    // zone counts at full weight up to the quota, then progressively less,
+    // and never above quota + 20% = 1200 covers. Fifteen merchants
+    // declaring 100 covers each: the first ten count 100, then the band
+    // degrades (87, 62, 37, 12) and closes at zero.
+    let mut w = World::new(Params::default());
+    w.add_zone(1, "test", 100, 10_000, 1_000_000, 1_000, 1_000_000_000, 1_000_000_000)
+        .unwrap();
+    for m in 0..15u64 {
+        w.enroll_merchant(1, m).unwrap();
+    }
+    for i in 0..1_500u64 {
+        w.enroll_person(1, 100 + i).unwrap();
+    }
+    w.new_day();
+    for m in 0..15u64 {
+        for i in 0..100u64 {
+            w.spend(1, 100 + m * 100 + i, m, 2_000).unwrap();
+        }
+    }
+    w.new_day();
+    let expected_converted = [
+        100, 100, 100, 100, 100, 100, 100, 100, 100, 100, // up to quota
+        87, 62, 37, 12, // degressive band
+        0, // closed
+    ];
+    for (m, expected) in expected_converted.iter().enumerate() {
+        let r = w.convert(1, m as u64, 200_000).unwrap();
+        assert_eq!(
+            r.converted_mexz,
+            expected * 2_000,
+            "merchant {} converted {}",
+            m,
+            r.converted_mexz
+        );
+        if *expected < 100 && *expected > 0 {
+            assert_eq!(r.capped_by, CapReason::ZoneQuotaCap);
+        }
+    }
+    let zone = w.zones.iter().find(|z| z.id == 1).unwrap();
+    // Total counted: 1000 + 198 = 1198, at most quota x 1.2 = 1200.
+    assert_eq!(zone.covers_counted_today, 1_198);
+    assert!(zone.covers_counted_today <= zone.quota_covers * 12 / 10);
+}
+
+#[test]
+fn overshooting_volume_melts_settlement_credit_faster() {
+    // Revised F.4, step 3: a 30-cover table with 20% headroom admits 36
+    // covers. A merchant that declared 40 is in overshoot: its confirmed
+    // settlement credit melts at 5% per day, outside the melt-free
+    // operational window. A merchant at 20 covers keeps its credit whole.
+    let mut w = World::new(Params::default());
+    w.add_zone(1, "test", 100, 1_000_000, 30, 1_000_000_000, 1_000_000_000, 1_000_000)
+        .unwrap();
+    w.enroll_merchant(1, 10).unwrap(); // will declare 40 covers
+    w.enroll_merchant(1, 20).unwrap(); // will declare 20 covers
+    for i in 0..60u64 {
+        w.enroll_person(1, 100 + i).unwrap();
+    }
+    w.new_day();
+    for i in 0..40u64 {
+        w.spend(1, 100 + i, 10, 2_000).unwrap(); // 40 covers at merchant 10
+    }
+    for i in 0..20u64 {
+        w.spend(1, 100 + 40 + i, 20, 2_000).unwrap(); // 20 covers at merchant 20
+    }
+    w.new_day(); // purchases confirm, then the overshoot melt applies
+    let zone = w.zones.iter().find(|z| z.id == 1).unwrap();
+    let m10 = zone.merchants.iter().find(|m| m.id == 10).unwrap();
+    let m20 = zone.merchants.iter().find(|m| m.id == 20).unwrap();
+    assert!(m10.overshoot, "40 covers exceeds the 36-cover adjusted table");
+    assert!(!m20.overshoot);
+    // 80_000 confirmed melted at 5% = 4_000 to the fund; 76_000 remain.
+    assert_eq!(m10.confirmed_total(), 76_000);
+    assert_eq!(m20.confirmed_total(), 40_000);
+    assert_eq!(w.stats.overshoot_melted_mexz, 4_000);
+    assert_eq!(w.fund.exz, 4_000);
 }

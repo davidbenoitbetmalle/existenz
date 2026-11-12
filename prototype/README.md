@@ -11,12 +11,13 @@ Rust workspace with two crates and zero external dependencies:
   coverage-indexed global fund, rollout gate and ration queue (Annex G), and
   the bounded merchant circuit (Annex H.2). Integer-only: balances in
   milli-EXZ, local amounts in cents.
-- **`crates/exz-sim`**: a multi-zone simulation CLI over the engine. Three
-  zones by default (a pilot at Annex G.5 scale, a thin adoption zone, and a
-  deliberately under-endowed stress zone), deterministic seeded RNG, daily
-  spend/circuit/convert loop, CSV and SVG outputs, and a stdout summary that
-  compares the effective per-person-per-year payout against the Annex G.1
-  projection.
+- **`crates/exz-sim`**: a multi-zone simulation CLI over the engine. Four
+  zones by default (a pilot at Annex G.5 scale, a thin adoption zone, a
+  deliberately under-endowed stress zone, and an oversubscribed dense zone
+  where the solidarity scale rule visibly throttles counting), deterministic
+  seeded RNG, daily spend/circuit/convert loop, CSV and SVG outputs, and a
+  stdout summary that compares the effective per-person-per-year payout
+  against the Annex G.1 projection.
 
 What this is NOT: not a blockchain, not a ledger, no cryptography, no
 identity, no networking, no wallet UI. The white paper remains the source of
@@ -25,10 +26,10 @@ truth; this prototype exists to test the rules and tune them by iteration.
 ## How to run
 
 ```bash
-# run the 19 rule tests (one per founding rule, plus regression tests)
+# run the 24 rule tests (one per founding rule, plus regression tests)
 cargo test --manifest-path prototype/Cargo.toml
 
-# run the 90-day, 3-zone simulation (release build recommended: 100k persons)
+# run the 90-day, 4-zone simulation (release build recommended: 100k persons)
 cargo run --release --manifest-path prototype/Cargo.toml -p exz-sim -- \
   --days 90 --seed 1 --out ./out
 ```
@@ -58,14 +59,59 @@ Determinism: same `--seed`, same run, byte-identical outputs.
 | `circuit_fraction_bps` / `circuit_window_days` | 2000 / 7 | Annex H.2 |
 | `commission_bps` / cap | 300 / 50 allowances | Annex F.5 |
 | `tier_initial_allowances` / `integrity_alpha_bps` | 100 / 2000 | Annex F.4 |
+| `zone_headroom_bps` | 2000 | revised F.4 (proposed) |
+| `overshoot_melt_bps_per_day` | 500 | revised F.4 (proposed) |
 | `reserve_horizon_days` | 90 (H) | Annex G.3 |
 | `payout_avg_days` | 7 | Annex G.3 |
+
+## The solidarity scale rule (revised F.4, proposed)
+
+A 100-cover restaurant must not fit a protocol addressed to people in need
+and small merchants. The prototype implements a three-step rule, proposed as
+a revision of Annex F.4 (the paper is NOT yet modified; this awaits review):
+
+1. **Merchant table cap (soft, per merchant).** Declared covers P saturate at
+   the zone class's solidarity table size P_max:
+   `P_eff = P_max x tanh(P / P_max)`, rounded to the nearest cover and
+   clamped by the declared count. Small tables are counted in full, a
+   100-cover restaurant at a 30-cover table counts 30, with no cliff.
+   Reference values: tanh fixed point matches libm within 1e-10
+   (tanh(1) = 0.7616, tanh(2/3) = 0.5828, tanh(5/3) = 0.9311,
+   tanh(10/3) = 0.9975).
+2. **Zone cover quota with degressive headroom.** Covers count at full
+   weight up to the zone's daily quota Q; beyond Q the marginal weight
+   decays linearly to zero at Q x (1 + 2h), so the zone's total counted
+   covers never exceed Q x (1 + h) with h = 20%: twenty percent above the
+   quota, reached progressively, no cliff.
+3. **Accelerated overshoot melting.** A merchant declaring more than
+   P_max x (1 + h) covers is in overshoot; while in overshoot its confirmed
+   settlement credit melts at 5% per day, and the melted units return to the
+   commons fund. Growth beyond the solidarity table becomes a cost, not an
+   asset.
+
+Proposed malnutrition classes (sim comments only, calibrations to debate):
+
+| Class | Prevalence of undernourishment | P_max |
+| --- | --- | --- |
+| stable | below 5% | 100 |
+| vulnerable | 5 to 15% | 60 |
+| alarming | 15 to 25% | 40 |
+| critical | above 25% | 30 |
+
+Structural consequence, the merchant density rule. If covers per merchant
+per day is d = N x u / M, aggregate counting capacity is
+N x u x tanh(r)/r with r = d / P_max, and the efficiency tanh(r)/r decreases
+in r. So the tables do not throttle a zone when
+`M >= N x u / (r* x P_max)` where tanh(r*)/r* = v. At the pilot scale
+(N = 100k, u = 0.60, P_max = 60, v = 0.80): M >= 1053 merchants; the pilot
+fabric (1500 merchants) passes, which is why its payout still matches the
+G.1 projection. Too few, too-large tables silently tax the whole zone.
 
 ## What the simulation showed (honest findings)
 
 1. **The Annex G.1 projection holds at pilot scale.** With N = 100,000,
    u = 0.60, v = 0.80, p = $0.60, the simulated effective payout is
-   217.98 USD per person per year against the 216.55 USD projection
+   218.16 USD per person per year against the 216.55 USD projection
    (0.7% deviation), with the fund paying exactly the steady-state daily
    payout D. The stress zone, endowed at half coverage, settles into the
    transparent ration as designed: partial same-day payment within the
@@ -93,7 +139,28 @@ Determinism: same `--seed`, same run, byte-identical outputs.
    credit aging out at the 7-day window. Zone endowments should either
    include a margin or count the circuit share in D.
 
-5. **An open design question:** queued conversion requests survive the
+5. **The solidarity scale rule bites exactly where it should, and exposes a
+   calibration coupling.** In the dense zone (10k persons, 300 merchants at
+   30-cover tables, quota Q = 2,000 covers/day deliberately below demand),
+   the degressive band throttles counting at Q + 20% (14,698 zone-quota cap
+   events over 90 days) and the effective payout falls to 85.45 USD per
+   person per year against a 169.18 projection: the policy lever works. But
+   because the endowment was computed from the unthrottled projection, the
+   zone ends over-covered (final coverage ratio 2.80) with the surplus
+   parked in the fund. When a class quota throttles a zone, the endowment
+   formula H x D_projected over-allocates; endowments should be computed
+   from the throttled projection, or the surplus should be explicitly
+   recycled.
+
+6. **Overshoot melting fires in under-tabled fabrics, gently.** In the thin
+   and stress zones a few merchants receive more unique visitors per day
+   than P_max x 1.2; their settlement credit melts at 5% per day while the
+   overshoot lasts (565 EXZ over 90 days in thin, 53 in stress, both small
+   against the zones' volume). In the pilot and dense zones no merchant
+   overshoots. The penalty is real but proportionate; whether 5%/day is the
+   right rate needs adversarial testing.
+
+7. **An open design question:** queued conversion requests survive the
    7-day reversion of the underlying settlement credit. A merchant can in
    principle be paid from the queue days after its backing credit reverted
    to the fund. The queue and the operational window interact; the paper
@@ -107,3 +174,8 @@ Determinism: same `--seed`, same run, byte-identical outputs.
   replayable as a ledger runtime candidate.
 - Wallet-shaped integration tests, and WASM compilation of exz-core.
 - Parameter sweeps (u, v, endowment coverage) to tune the rollout gate.
+- Adversarial actors against the scale rule: cover-splitting across
+  sub-merchants, recycled unique visitors, quota-band gaming via conversion
+  order.
+- Revision of Annex F.4 in the white paper itself, pending review: the
+  implemented rule is the working proposal, the paper text is unchanged.
