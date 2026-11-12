@@ -6,7 +6,8 @@ Usage: python3 scripts/build_site.py docs/existenz_wp.md index.html
 The script is dependency-free (standard library only) so it runs both locally
 and in GitHub Actions. It produces one self-contained index.html: fixed
 left-side table of contents, sticky title banner with breadcrumb and tagline,
-inline CSS, no external assets.
+orange visual identity, airy typography with bold lead-in labels, inline CSS,
+no external assets.
 """
 import html
 import re
@@ -72,35 +73,55 @@ def parse_markdown(text):
     return blocks
 
 
-CSS = """:root{--ink:#1a2333;--muted:#5a6578;--accent:#1f5fa8;--bg:#fdfdfb;--line:#e3e6ec;--max:860px;--navw:280px;--heroh:170px}
+def inline(text):
+    """Render inline markdown: **bold**, *italic*, and bold lead-in labels."""
+    def bold_label(m):
+        label, rest = m.group(1), m.group(2)
+        return f"<strong>{html.escape(label)}:</strong>{html.escape(rest)}"
+    # escape everything first
+    out = html.escape(text, quote=False)
+    # bold/italic emphasis written in the source
+    out = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", out)
+    out = re.sub(r"(?<![\w*])\*([^*\n]+?)\*(?![\w*])", r"<em>\1</em>", out)
+    # bold lead-in labels: "Label: rest" with a short label, only at the start
+    m = re.match(r"^([A-Z][^:]{2,48}):(\s+|$)", out)
+    if m:
+        out = f"<strong>{m.group(1)}:</strong>" + out[m.end(1) + 1:]
+    return out
+
+
+CSS = """:root{--ink:#2a2018;--muted:#6b5d4a;--accent:#d95f18;--accent2:#a54a0e;--bg:#faf7f1;--line:#e9dfd0;--soft:#fdf3e7;--max:840px;--navw:280px;--heroh:170px}
 *{box-sizing:border-box}
-body{margin:0;font-family:Georgia,'Times New Roman',serif;background:var(--bg);color:var(--ink);line-height:1.65;font-size:17px}
+body{margin:0;font-family:Georgia,'Times New Roman',serif;background:var(--bg);color:var(--ink);line-height:1.8;font-size:17.5px}
 .topbar{position:sticky;top:0;z-index:30;margin-left:var(--navw)}
-header.hero{background:var(--ink);color:#fff;padding:26px 24px 20px;text-align:center}
-header.hero h1{font-size:1.9rem;margin:0 0 6px;letter-spacing:.5px}
-header.hero p.subtitle{margin:0 auto;max-width:640px;color:#c6cfdd;font-size:1rem;font-style:italic}
-header.hero p.tagline{margin:10px auto 0;color:#9fc0ec;font-size:.88rem;font-style:italic}
-.crumbs{background:#141a29;color:#8fa2c0;padding:8px 24px;font-family:system-ui,sans-serif;font-size:.82rem;text-align:center}
-.crumbs a{color:#9fc0ec;text-decoration:none}
+header.hero{background:linear-gradient(135deg,#3a230d 0%,#7a3b08 60%,#a54a0e 100%);color:#fff;padding:28px 24px 22px;text-align:center}
+header.hero h1{font-size:2rem;margin:0 0 8px;letter-spacing:.5px}
+header.hero p.subtitle{margin:0 auto;max-width:640px;color:#f4d9b8;font-size:1.02rem;font-style:italic}
+header.hero p.tagline{margin:12px auto 0;color:#ffb066;font-size:.9rem;font-style:italic}
+.crumbs{background:#241505;color:#c99e6d;padding:8px 24px;font-family:system-ui,sans-serif;font-size:.82rem;text-align:center}
+.crumbs a{color:#ffb066;text-decoration:none}
 .crumbs a:hover{color:#fff;text-decoration:underline}
-.crumbs .sep{margin:0 8px;color:#54627d}
-nav{background:#fff;border-right:1px solid var(--line);position:fixed;top:0;left:0;bottom:0;width:var(--navw);overflow:auto;padding:24px 18px;z-index:10}
-nav summary{cursor:pointer;font-weight:bold;font-family:system-ui,sans-serif;font-size:.9rem;color:var(--accent);list-style:none}
+.crumbs .sep{margin:0 8px;color:#8a6a45}
+nav{background:#fffdf8;border-right:1px solid var(--line);position:fixed;top:0;left:0;bottom:0;width:var(--navw);overflow:auto;padding:24px 18px;z-index:10}
+nav summary{cursor:pointer;font-weight:bold;font-family:system-ui,sans-serif;font-size:.9rem;color:var(--accent2);list-style:none}
 nav ul{padding:8px 0 4px;margin:6px 0 0;list-style:none}
-nav li{margin:2px 0}
+nav li{margin:3px 0}
 nav li.lvl2{padding-left:14px;font-size:.85rem}
 nav a{color:var(--muted);text-decoration:none}
-nav a:hover{color:var(--accent);text-decoration:underline}
-main{max-width:var(--max);padding:40px 48px 80px;margin-left:calc(var(--navw) + (100% - var(--navw) - var(--max))/2)}
-h2{font-family:system-ui,sans-serif;font-size:1.6rem;color:var(--accent);border-bottom:2px solid var(--line);padding-bottom:6px;margin-top:56px;scroll-margin-top:calc(var(--heroh) + 24px)}
-h3{font-family:system-ui,sans-serif;font-size:1.15rem;color:#33415e;margin-top:32px;scroll-margin-top:calc(var(--heroh) + 24px)}
-table{border-collapse:collapse;width:100%;margin:20px 0;font-size:.92rem;font-family:system-ui,sans-serif}
-th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
-th{background:#f0f3f8}
-ul{padding-left:24px}
-li{margin:6px 0}
-footer{border-top:1px solid var(--line);color:var(--muted);text-align:center;padding:24px;font-size:.85rem;font-family:system-ui,sans-serif;margin-left:var(--navw)}
-@media(max-width:1100px){main{margin-left:var(--navw);padding:40px 24px 80px}}
+nav a:hover{color:var(--accent2);text-decoration:underline}
+main{max-width:var(--max);padding:48px 48px 96px;margin-left:calc(var(--navw) + (100% - var(--navw) - var(--max))/2)}
+h2{font-family:system-ui,sans-serif;font-size:1.65rem;font-weight:700;color:var(--accent2);border-bottom:3px solid var(--accent);padding-bottom:8px;margin:72px 0 20px;scroll-margin-top:calc(var(--heroh) + 28px)}
+h3{font-family:system-ui,sans-serif;font-size:1.2rem;color:#7a3b08;margin-top:44px;scroll-margin-top:calc(var(--heroh) + 28px)}
+h1{font-family:system-ui,sans-serif;scroll-margin-top:calc(var(--heroh) + 28px)}
+p{margin:0 0 1.4em}
+strong{font-weight:700;color:#1f1205}
+ul{padding-left:26px;margin:0 0 1.6em}
+li{margin:0 0 .9em;line-height:1.75}
+table{border-collapse:collapse;width:100%;margin:24px 0 32px;font-size:.92rem;font-family:system-ui,sans-serif}
+th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+th{background:var(--soft);color:#7a3b08}
+footer{border-top:3px solid var(--accent);color:var(--muted);text-align:center;padding:28px;font-size:.85rem;font-family:system-ui,sans-serif;margin-left:var(--navw);background:var(--soft)}
+@media(max-width:1100px){main{margin-left:var(--navw);padding:48px 24px 96px}}
 @media(max-width:820px){
 nav{position:static;width:auto;max-height:none;border-right:none;border-bottom:1px solid var(--line);padding:10px 20px}
 .topbar,header.hero,main,footer{margin-left:0}
@@ -153,11 +174,11 @@ def build(blocks):
                 if strip_md(content) == tagline:
                     seen_hero["p"] = True
                     continue  # tagline goes to the hero
-            body.append(f"<p>{content}</p>")
+            body.append(f"<p>{inline(content)}</p>")
         elif kind == "h3":
-            body.append(f"<h3>{html.escape(content)}</h3>")
+            body.append(f"<h3>{inline(content)}</h3>")
         elif kind == "li":
-            body.append(f"<li>{content}</li>")
+            body.append(f"<li>{inline(content)}</li>")
         elif kind == "table":
             rows = content
             t = "<table><thead><tr>" + "".join(
