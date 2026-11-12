@@ -6,7 +6,7 @@
 ## Abstract / Executive Summary
 
 The Existenz (EXZ) project proposes a fair global virtual currency designed to guarantee, through monetary design itself, a subsistence floor for every human being. Inspired by Article 3 of the Universal Declaration of Human Rights ("Everyone has the right to life, liberty and security of person"), Existenz distributes an equal amount of currency to every verified human existence, caps individual accumulation, and applies a controlled melting (demurrage) mechanism that recycles wealth into a global solidarity fund. This white paper formalizes the concept presented in the original Existenz presentation, develops its monetary mechanics, examines two distribution scenarios, addresses governance, identity and technical requirements, and provides an economic and risk analysis together with an implementation roadmap. Annexes A to G propose robust protocols for the structural weaknesses
-identified: human uniqueness (Sybil resistance), geographic value anchoring, melting equity, fully offline existence verification at the point of sale for holders who own no phone and carry no physical credential, immediate intraday transaction security for the merchant, end-of-day settlement of merchant value into local currency under a strict single-hop rule, at a statistically bounded, abuse-resistant conversion rate, extended offline operation secured by a daily regenerated cryptographic trace and opportunistic peer-to-peer relay sync, and a quantitative solvency model of the global fund.
+identified: human uniqueness (Sybil resistance), geographic value anchoring, melting equity, fully offline existence verification at the point of sale for holders who own no phone and carry no physical credential, immediate intraday transaction security for the merchant, end-of-day settlement of merchant value into local currency under a strict single-hop rule, at a statistically bounded, abuse-resistant conversion rate, extended offline operation secured by a daily regenerated cryptographic trace and opportunistic peer-to-peer relay sync, and a quantitative solvency model of the global fund. The protocol's universal guarantee is goods-denominated, not currency-denominated: what is promised to every holder everywhere is the meal, while conversion into local currency is defined as a bounded, coverage-indexed public service of the global fund rather than an unconditional exchange. Annex H extends the design beyond the floor: the issuance rate as a governance parameter (the bridge from subsistence to universal income), a bounded merchant circuit that reduces conversion demand, and an honest treatment of credit and lending outside the protocol, including the inalienability of the issuance stream.
 
 # 1. Introduction: Recognizing Human Existence
 
@@ -80,7 +80,7 @@ Each account is limited to a maximum balance. Amounts above the cap flow to the 
 - An emergency mechanism: activation requires 10 blockchain validations within a geographical range (for example, validators geographically distributed around a disaster area), preventing both fraud and unilateral capture.
 - A solidarity recycling channel: wealth that would otherwise concentrate returns to the commons.
 - A death-settlement mechanism: at the end of an existence, remaining EXZ joins the fund rather than any heir or estate, reinforcing the principle that the currency recognizes existence, not inheritance.
-- The merchant liquidity backstop: the fund guarantees merchant conversion into local currency at the anchored rate, within the statistical caps of Annex F. This is the economic role that pays for the verification work merchants perform.
+- The merchant liquidity backstop, bounded: the fund buys merchant settlement credit back into local currency at the anchored rate, within the statistical caps of Annex F and the coverage-indexed ration of Annexes G and H.1. It is a buyer of last resort within a published ration, not a universal exchange. This is the economic role that pays for the verification work merchants perform.
 
 ## 5.3 Geographic Value Basis
 
@@ -140,7 +140,7 @@ case of a merchant away from any connectivity for up to a year, is secured by th
 - Velocity and demand: melting creates continuous spending pressure; the daily issuance stream creates continuous replenishment, a steady-state economy of subsistence.
 - Inflation control: because balances are capped and melt, the effective money in circulation is bounded; issuance replaces melted units rather than expanding the base indefinitely.
 - Speculation resistance: with no store-of-value function, a cap, and a single hop after which the currency exits to local money at a fixed indexed rate, EXZ offers no attractive speculative position and no arbitrage loop.
-- Comparison with UBI: Existenz avoids fiscal dependence and national borders, but requires global identity infrastructure and does not by itself provide stores, logistics or services that accept the currency; merchant adoption is a first-order success factor, and Annex F gives merchants a same-day liquidity guarantee, which is the single strongest adoption lever.
+- Comparison with UBI: Existenz avoids fiscal dependence and national borders, but requires global identity infrastructure and does not by itself provide stores, logistics or services that accept the currency; merchant adoption is a first-order success factor, and Annex F gives merchants a same-day liquidity guarantee, which is the single strongest adoption lever. The issuance rate being a governance parameter also means the mechanism itself is the universal-income architecture of H.3, with only the subsistence level currently funded.
 
 # 9. Risk Analysis and Open Questions
 
@@ -169,8 +169,8 @@ Adoption: a currency is only as useful as what it can buy; anchor use cases (foo
 # 10. Implementation Roadmap
 - Research phase: formalize melting mathematics, validate the RHUP identity protocol of Annex A, the BNB index of Annex B, the equity layer of Annex C, the offline protocols of Annex E, the day-chain and relay-sync design of E.11, and the single-hop settlement and conversion design of Annex F through public review of this white paper.
 - Prototype: testnet with a small cohort, Scenario A parameters, simulated geographic zones, RHUP enrollment on a volunteer web of trust, offline payment pilots with participating merchants, including cardless presence verification, intraday template capture, the offline day-chain, opportunistic BLE relay sync between devices, and a simulated conversion agent.
-- Pilot: one or two regions with basic-need merchants (food, water, telecom), measure velocity, adoption, fraud rate, index manipulation attempts, offline double-spend attempts, template replay attempts, merchant abuse attempts, day-chain continuity across long offline periods, relay sync latency in sparse populations, single-hop enforcement and conversion demand vs. statistical caps.
-- Parameter settlement: first two-thirds vote of the account owners, ending the founding stewardship of Section 1.2, on distribution model (A, B or hybrid), cap level, melting rate, floor exemption, sub-wallet limits, offline session limits, template retention window, tolling rules of E.11, merchant cap tiers, commission rate, advance fraction and conversion caps of Annex F.
+- Pilot: one or two regions with basic-need merchants (food, water, telecom), measure velocity, adoption, fraud rate, index manipulation attempts, offline double-spend attempts, template replay attempts, merchant abuse attempts, day-chain continuity across long offline periods, relay sync latency in sparse populations, single-hop enforcement, conversion demand vs. statistical caps, and merchant circuit take-up vs. direct conversion (H.2).
+- Parameter settlement: first two-thirds vote of the account owners, ending the founding stewardship of Section 1.2, on distribution model (A, B or hybrid), cap level, melting rate, floor exemption, sub-wallet limits, offline session limits, template retention window, tolling rules of E.11, merchant cap tiers, commission rate, advance fraction and conversion caps of Annex F, and the merchant circuit fraction of H.2.
 - Scale-up: progressive onboarding by geographic zones under the three-tier governance matrix of Annex D.
 
 # 11. Known Limits and Structural Weaknesses: a Deliberately Honest Statement
@@ -189,6 +189,7 @@ could break precisely where Existenz succeeds most.
 Mitigations, partial and stated as such:
 
 - The caps of Annex F already ration conversion per merchant (physical, plausibility, tier), which slows any drain but does not create local-currency liquidity.
+- The bounded merchant circuit of H.2 lets merchants spend a capped fraction of their settlement credit on basic-need goods from other merchants before converting: every EXZ spent in the circuit is an EXZ the fund does not have to buy back, reducing the conversion rate v structurally instead of merely capping it.
 - The fund must publish a live coverage ratio (endowment available for conversion vs. conversion demand) and dynamically ration conversion when the ratio degrades, converting the guarantee from an unconditional promise into a transparent, queue-managed public service. Rationing is a weakness in plain sight, and it is better than silent insolvency.
 - The protocol must explicitly invite external endowment of the fund (philanthropic, institutional, eventually state contributions) as the honest answer to the circularity: a universal subsistence claim ultimately draws on real production, and real production must be paid for in instruments the producers accept. The melting-currency design reduces, but cannot abolish, this dependence.
 - Long-term equilibrium relies on merchants accepting EXZ as customer demand, with conversion used only partially: the goal is an economy where EXZ circulates as a basic-need medium, not one where every unit immediately exits to fiat.
@@ -197,7 +198,7 @@ This weakness is not a reason to abandon the design; it is the boundary of what 
 
 ## 11.2 The fund's circularity: an EXZ-rich fund is not a solvent fund
 
-Corollary of 11.1: the global fund accumulates EXZ, but its obligations (emergency aid, merchant conversion) are largely denominated in real goods and local currency. Unless externally endowed, the fund is a circular bookkeeping device: it recycles claims, it does not create purchasing power. This must be acknowledged in the governance matrix: fund guarantee levels are a parametric rule that the two-thirds vote may only raise against demonstrated endowment, never on promise.
+Corollary of 11.1: the global fund accumulates EXZ, but its obligations (emergency aid, merchant conversion) are largely denominated in real goods and local currency. Unless externally endowed, the fund is a circular bookkeeping device: it recycles claims, it does not create purchasing power. Annex H.1 resolves this structurally by redefining what the protocol guarantees: the floor is goods-denominated (the meal at the merchant) and holds by construction, while currency conversion is a bounded, coverage-indexed service whose exposure is capped by the operational-window demurrage of settlement credit, by the zone rollout gates and rationing queue of G.3, and reduced in volume by the merchant circuit of H.2. The residual weakness is therefore no longer solvency but communication: if the public reads the floor as a conversion guarantee, every rationing event will be experienced as a broken promise. The governance matrix must state the distinction in the protocol's own vocabulary: fund guarantee levels are a parametric rule that the two-thirds vote may only raise against demonstrated endowment, never on promise.
 
 ## 11.3 Identity at planetary scale: an unsolved problem, priced rather than solved
 
@@ -238,7 +239,7 @@ Every one of these weaknesses is either bounded by an annex protocol, priced by 
 
 # 12. Conclusion
 
-Existenz proposes that the recognition of a human existence can be encoded in a monetary protocol: equal issuance for every person, capped accumulation, melting that rewards circulation, and a global fund that recycles excess into emergency solidarity. It is not a savings vehicle and does not aim to be one; it aims to be a helping hand toward daily basic needs for every human, anywhere. The founding rules are simple; the hard problems, identity without surveillance, value without borders, melting without punishing the poor, subsistence without connectivity, without a phone and without any physical credential, honest merchant liquidity without fund abuse or chain fraud, even a year away from the network, and an honest account of the system's structural limits, are addressed by the annex protocols and by Section 11 of this paper, whose parameters remain under the two-thirds governance of
+Existenz proposes that the recognition of a human existence can be encoded in a monetary protocol: equal issuance for every person, capped accumulation, melting that rewards circulation, and a global fund that recycles excess into emergency solidarity. It is not a savings vehicle and does not aim to be one; it aims to be a helping hand toward daily basic needs for every human, anywhere. The founding rules are simple; the hard problems, identity without surveillance, value without borders, melting without punishing the poor, subsistence without connectivity, without a phone and without any physical credential, honest merchant liquidity without fund abuse or chain fraud, even a year away from the network, a fund honestly bounded as a public service rather than disguised as a universal exchange, a parameterized bridge from subsistence to universal income, an account of credit outside the protocol that protects the issuance stream without pretending to abolish its gray market, and an honest account of the system's structural limits, are addressed by the annex protocols and by Section 11 of this paper, whose parameters remain under the two-thirds governance of
 the very people the currency exists to serve.
 
 # Annex A - Robust Human Uniquity Protocol (RHUP)
@@ -477,12 +478,14 @@ Why the chain is forbidden, deliberately:
 - Incentive coherence: merchants are paid to verify existence, not to become a banking layer. A supplier chain would make large merchants de facto financial intermediaries, concentrating exactly the accumulation power the founding rules forbid.
 - Simplicity for the poorest: a holder needs to understand exactly one thing: my existence buys basic goods at any merchant. A single hop keeps the mental model as simple as the sandwich.
 
+The single deliberate exception is the bounded merchant circuit of H.2, where settlement credit may be spent on basic-need goods with other merchants within a capped tier. It is specified as an explicit, parametric relaxation, adopted for one arithmetic reason, reducing the fund's conversion obligation, not as a silent opening of the value chain.
+
 ## F.2 The merchant's three streams
 
 A merchant is first a human being, and only second an economic actor. The protocol keeps three distinct streams:
 
 - Existence wallet: the merchant's own daily issuance, subject to the same cap and melting as anyone else. It never mingles with business streams.
-- Settlement credit: EXZ earned from confirmed sales, non-transferable by F.1, melting-exempt for a short operational window (proposed 7 days, tolled during certified offline periods per E.11.2), because the merchant must not be penalized for cash-flow latency they do not control.
+- Settlement credit: EXZ earned from confirmed sales, non-transferable by F.1, melting-exempt for a short operational window (proposed 7 days, tolled during certified offline periods per E.11.2), because the merchant must not be penalized for cash-flow latency they do not control. It may also be spent, before conversion, within the bounded merchant circuit of H.2.
 - Conversion account: the local-currency counterpart of settled and convertible EXZ, held with a licensed conversion agent (F.3). This is where daily liquidity materializes.
 
 ## F.3 End-of-day declaration and the conversion channel
@@ -564,7 +567,7 @@ With N = 8.1 billion and 2 EXZ per person per day:
 | 90% | 80% | ~7.2 B USD/day | ~2,630 B USD/yr |
 | 90% | 100% | ~9.0 B USD/day | ~3,290 B USD/yr |
 
-Reference points: total global humanitarian assistance is on the order of 55 B USD per year; total official development assistance is on the order of 220 B USD per year; world GDP is on the order of 105 T USD. At u = 60% and v = 80%, the fund's conversion obligation would be roughly 1.7% of world GDP, about thirty times all humanitarian aid combined. The conclusion of 11.1 is therefore not rhetorical but arithmetical: at planetary scale, full-utilization conversion cannot be an unconditional same-day guarantee. It must be a rationed, coverage-indexed public service, or the fund must be externally endowed at a scale no private actor can provide.
+Reference points: total global humanitarian assistance is on the order of 55 B USD per year; total official development assistance is on the order of 220 B USD per year; world GDP is on the order of 105 T USD. At u = 60% and v = 80%, the fund's conversion obligation would be roughly 1.7% of world GDP, about thirty times all humanitarian aid combined. The conclusion of 11.1 is therefore not rhetorical but arithmetical: at planetary scale, full-utilization conversion cannot be an unconditional same-day guarantee. It must be a rationed, coverage-indexed public service, or the fund must be externally endowed at a scale no private actor can provide. Annex H.1 turns this conclusion into the definition of the guarantee, and H.2 reduces the demand it must serve.
 
 ## G.3 Reserve requirement and the coverage ratio rule
 
@@ -579,6 +582,7 @@ The endowment R covers only the buffer, not the flow: in steady state, whatever 
 The model shows where the protocol's real degrees of freedom sit:
 
 - v is the principal lever, and the design already compresses it: settlement credit melts past the operational window (unconverted units return to the commons instead of draining the fund), the commission cap bounds the commission component of v, and the three caps of F.4 bound per-merchant presentation. Every cap in Annex F is, monetarily, a limit on D.
+- The merchant circuit of H.2 acts on v from the demand side: a capped fraction of settlement credit spent in kind on basic-need goods never reaches the conversion queue, so D falls without any cap being tightened. Its parameters (circuit fraction, eligible goods) are parametric rules under the two-thirds vote.
 - p is anchored per zone by the BNB index: poorer zones have lower p, so the same subsistence claim costs the fund less where it matters most. Global average payout scales with the mix of enrolled zones, giving the roadmap a natural economic sequencing: early zones are also the cheapest per person served.
 - u is the success variable: the model states plainly that every point of utilization success is a point of solvency stress, unless matched by endowment inflow. Existenz's measure of victory and its measure of solvency are the same number read in opposite directions.
 
@@ -595,6 +599,52 @@ The same arithmetic at rollout scale shows the model is not only a warning but a
 
 A pilot is fundable by ordinary philanthropic standards; a full region is a national social-program budget; the planetary scale is a wealth-transfer program of historic order, by construction. This is the honest meaning of a universal subsistence currency: the protocol can make the claim universal, but only the world's real resources, contributed through the fund, can make it universally honored in local currency. The design's job is to make that contribution visible, priced, capped and governed, which is exactly what Sections 5.2 and 11 and Annexes F and G together specify.
 
+# Annex H - Beyond the Floor: Income, Credit, and the Outside Economy
+
+This annex extends the design in three directions that the founding rules deliberately left implicit: what exactly the fund guarantees, how the mechanism scales from subsistence toward a universal income, and how credit can and cannot develop around a currency that is not a store of value.
+
+## H.1 What the protocol actually guarantees: the meal, not the conversion
+
+The five founding rules guarantee a goods-denominated floor: 2 EXZ buy a basic meal from any participating merchant, anywhere, at any time. This guarantee is universal, unconditional, and costs the fund nothing, because it is honored in goods by the merchants who choose to accept EXZ, under the presence verification of Annex E and the caps of Annex F.
+
+Conversion into local currency is a different object, and the document states the difference as a definition rather than a caveat: conversion is a merchant service, backed by the global fund acting as buyer of last resort within a published, coverage-indexed ration (G.3). The ration is real: bounded by the operational-window demurrage of settlement credit (unconverted units return to the commons), by the per-merchant cap band of F.4, by the zone rollout gates of G.3, and reduced in volume by the merchant circuit of H.2. A merchant within the ration converts same-day at the anchored rate; a merchant beyond the ration queues transparently and is paid as the coverage ratio recovers.
+
+This redefinition does not weaken the design; it prices it. The alternative, an unconditional conversion guarantee, is arithmetically refuted by Annex G. The honest formulation is: Existenz can guarantee the meal universally, and the meal is what a subsistence floor is.
+
+## H.2 The bounded merchant circuit
+
+The single-hop rule of Annex F forbids merchant earnings to circulate. One deliberate, bounded exception is specified here, adopted for one arithmetic reason: every EXZ a merchant spends in kind is an EXZ the fund does not have to buy back.
+
+Design: a merchant may spend a capped fraction of their settlement credit (proposed initial parameter: 20% of weekly settlement credit) on basic-need goods purchased from other participating merchants, before conversion. The circuit is protocol-level: settlement credit spent in the circuit is consumed at the BNB-anchored value, generates a normal verified-presence transaction for the receiving merchant, and never leaves the settlement-credit state.
+
+What it buys: a structural reduction of the conversion demand D of Annex G, borne by the merchant economy itself; a partial re-circulation of subsistence value inside the zone, which strengthens local adoption; and a liquidity path for zones where conversion agents are rare, since goods are available wherever merchants exist.
+
+What it costs, stated honestly: it is a controlled leak in the single-hop rule. It reintroduces a bounded merchant-to-merchant interface, with its fraud surface (colluding merchants recycling fabricated settlement credit through each other); the exposure is bounded by the circuit fraction, by the ordinary presence verification required at each circuit purchase, and by the cross-merchant audit already specified in E.7 and F.6. It also adds a parameter to govern, and parameters are governance load. The circuit fraction is therefore a parametric rule of Annex D, set to zero or a low value at pilot start, and raised only against measured fraud data.
+
+## H.3 Adjustable issuance: from subsistence floor to universal income
+
+The issuance rate is a governance parameter, not a constant of nature. Two EXZ per day under the subsistence model is the level at which one EXZ buys one basic meal anywhere; nothing in the mechanism changes at a higher rate. The same ledger, the same identity layer, the same melting, the same single-hop economy operate identically whether the daily issuance buys one meal or three.
+
+This makes the relationship between Existenz and a universal basic income explicit: the protocol is an income architecture whose funded level is currently subsistence. Raising the level is a two-thirds decision that the governance matrix correctly prices: by the rule of 11.2, guarantee levels may only be raised against demonstrated endowment of the fund, never on promise. The fund is thereby revealed as what it structurally is: the interface between the monetary protocol and the world's real resources. The income level the world can operate is exactly the level the world endows. Existenz does not legislate that level; it makes it legible, per person, per zone, at near-zero administrative cost.
+
+## H.4 Credit outside the protocol, and the inalienable stream
+
+A currency that flows daily to every human will attract lending, and an honest document must distinguish what the protocol can guarantee from what it must simply acknowledge.
+
+The known failure mode: advance-selling. UBI pilots consistently document lenders advancing local currency against future transfers at usurious discounts, converting a subsistence floor into debt bondage. No protocol can prevent a person from pledging their future issuance verbally or on paper; biometrics proves presence, not freedom, exactly as in the gray allocations market of F.6.
+
+What the protocol does guarantee, and why it matters:
+
+- The issuance stream is inalienable and unseizable. No transfer, assignment or garnishment of future issuance exists as a protocol operation, mirroring the inalienability of the merchant vote in Annex D. A lender may be repaid voluntarily; the ledger offers no hook to seize, no account to attach, no future to lien.
+- Melting punishes hoarded lending: a lender accumulating EXZ repayments watches them melt, so the currency itself is a poor collateral pool.
+- The gray market is priced, not policed: identity-lending detection (A.4) and the merchant cap band bound industrial harvesting, while small-scale pledging remains, as in every welfare system, an incompressible social phenomenon outside the protocol's reach.
+
+What the protocol can offer positively: a verifiable income registry. The ledger proves, with zero knowledge of identity, that a pseudonymous account receives a regular issuance stream in a given zone. An outside lender, a bank, a cooperative, a microfinance institution, may lend local currency against that verified stream under local law, exactly as payroll lending works today. The protocol's boundaries in that arrangement are explicit and non-negotiable: the ledger records, it does not enforce; the loan is local law's business, denominated in local currency; and the issuance stream itself remains unseizable, so a defaulting borrower faces the lender's ordinary remedies, never confiscation of subsistence.
+
+## H.5 A licensed lending tier (explicitly not specified)
+
+A future extension would be verified lenders operating inside the protocol, converting at market rates under caps, handling defaults under licensed local law. This annex deliberately does not specify it: a lending tier creates exactly the financial intermediary class the founding rules were written to prevent, and its design (licensing, caps, default handling, interaction with the integrity index) deserves its own annex, written after the subsistence economy of Annexes E and F has been challenged and measured. It is recorded here as future work, so that the omission is a decision, not an oversight.
+
 # References and Lineage
 - Universal Declaration of Human Rights, Articles 3, 22 and 25.
 - Silvio Gesell, The Natural Economic Order (Freigeld and stampscrip theory).
@@ -604,5 +654,7 @@ A pilot is fundable by ordinary philanthropic standards; a full region is a nati
 - Local exchange trading systems and complementary currency conversion practice (basis of the licensed agent and anchored rate design).
 - Offline hash-chain timestamping and delay-tolerant networking (basis of the day-chain trace and opportunistic relay sync of Annex E.11).
 - Universal basic income literature and pilot experiments.
+- UBI pilot findings on debt, advance-selling of future transfers and garnishment practice (basis of H.4).
+- Public credit registry and payroll-lending practice (basis of the outside-protocol lending model of H.4).
 - Humanitarian food-basket costing practice (basis of the p = 0.60 USD PPP per meal estimate of Annex G).
 - The original Existenz presentation, "Existenz: a fair global currency".
