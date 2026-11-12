@@ -41,7 +41,7 @@ The operating rules on one screen (standalone page:
 > - **Anchored value.** The conversion rate follows the local price of the
 >   basic-needs basket: what is guaranteed to every holder everywhere is the
 >   meal, not a currency amount.
-> - **Solidarity scale** (proposed revision of Annex F.4, implemented and
+> - **Solidarity scale** (Annex F.4, implemented and
 >   tested in the prototype). Zones are classed by malnutrition prevalence,
 >   and the class sets the maximum "solidarity table" per merchant. A
 >   100-cover restaurant fits nowhere. The zone's total accepted volume

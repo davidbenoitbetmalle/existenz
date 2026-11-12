@@ -17,9 +17,14 @@ of the white paper. This page is updated as the project progresses.
 - A rules-engine prototype and multi-zone simulation (`prototype/`): the
   monetary rules as an executable specification, 24 tests, zero dependencies,
   integer-only. The Annex G.1 pilot projection is verified by simulation
-  within 0.7%, and the solidarity scale rule (proposed revision of Annex
-  F.4: soft table cap, zone cover quota, accelerated overshoot melting) is
-  implemented and simulated. See [prototype/README.md](prototype/README.md).
+  within 0.7%, and the solidarity scale rule of Annex F.4 (soft table cap,
+  zone cover quota, accelerated overshoot melting) is implemented, simulated
+  at planetary scale, and now written into the white paper. See
+  [prototype/README.md](prototype/README.md).
+- A planetary-scale test bed (`prototype/world/`): zones generated from real
+  FAO/UN country data (170 countries, 7.87 billion people represented,
+  426 zones), verifying the Annex G.1 projection per zone within 15% across
+  three random seeds.
 
 ## What is specified but not yet built
 

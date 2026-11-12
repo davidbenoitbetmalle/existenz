@@ -68,16 +68,17 @@ Determinism: same `--seed`, same run, byte-identical outputs.
 | `circuit_fraction_bps` / `circuit_window_days` | 2000 / 7 | Annex H.2 |
 | `commission_bps` / cap | 300 / 50 allowances | Annex F.5 |
 | `tier_initial_allowances` / `integrity_alpha_bps` | 100 / 2000 | Annex F.4 |
-| `zone_headroom_bps` | 2000 | revised F.4 (proposed) |
-| `overshoot_melt_bps_per_day` | 500 | revised F.4 (proposed) |
+| `zone_headroom_bps` | 2000 | Annex F.4 |
+| `overshoot_melt_bps_per_day` | 500 | Annex F.4 |
 | `reserve_horizon_days` | 90 (H) | Annex G.3 |
 | `payout_avg_days` | 7 | Annex G.3 |
 
-## The solidarity scale rule (revised F.4, proposed)
+## The solidarity scale rule (Annex F.4)
 
 A 100-cover restaurant must not fit a protocol addressed to people in need
-and small merchants. The prototype implements a three-step rule, proposed as
-a revision of Annex F.4 (the paper is NOT yet modified; this awaits review):
+and small merchants. The prototype implements the three-stage rule of
+Annex F.4 (now written into the white paper; the executable rule here is the
+reference implementation of the paper text):
 
 1. **Merchant table cap (soft, per merchant).** Declared covers P saturate at
    the zone class's solidarity table size P_max:
@@ -253,6 +254,5 @@ World-fabric findings, honestly:
   price spike, merchant die-off, refugee influx; multi-seed statistical
   acceptance in CI.
 - Regional meal prices from the cost-of-a-healthy-diet data instead of the
-  uniform Annex G meal price.
-- Revision of Annex F.4 in the white paper itself, pending review: the
-  implemented rule is the working proposal, the paper text is unchanged.
+  uniform Annex G meal price. The shock scenarios above and the CoHD
+  calibration are tracked as repository issues and milestones.
