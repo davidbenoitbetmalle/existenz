@@ -23,11 +23,13 @@ The Existenz (EXZ) project proposes a fair global virtual currency designed to g
 
 # 1. Introduction: Recognizing Human Existence
 
-Modern monetary systems reward accumulation and speculation, while roughly a quarter of humanity lives below subsistence thresholds and more than a billion people remain financially excluded.
+**The starting point.** Modern monetary systems reward accumulation and speculation, while roughly a quarter of humanity lives below subsistence thresholds and more than a billion people remain financially excluded.
 
-Existenz takes a different route: instead of taxing and redistributing within national borders, it embeds distribution into the currency protocol itself. Every verified human existence receives the same amount of a purpose-built virtual currency. Because the currency melts when hoarded and is capped per account, it functions as a medium of subsistence and circulation rather than a store of value. Each human existence is recognized, economically, by the network.
+**The route taken.** Instead of taxing and redistributing within national borders, Existenz embeds distribution into the currency protocol itself. Every verified human existence receives the same amount of a purpose-built virtual currency.
 
-The core thesis of this paper is that a well-designed melting currency with equal issuance, an accumulation cap and geographic value adjustment can operationalize the right to subsist at global scale, without relying on any state budget.
+**Why it works.** Because the currency melts when hoarded and is capped per account, it functions as a medium of subsistence and circulation rather than a store of value. Each human existence is recognized, economically, by the network.
+
+**The core thesis.** A well-designed melting currency with equal issuance, an accumulation cap and geographic value adjustment can operationalize the right to subsist at global scale, without relying on any state budget.
 
 ## 1.1 Why now: the technological condition
 
@@ -252,8 +254,13 @@ Every one of these weaknesses is either bounded by an annex protocol, priced by 
 
 # 12. Conclusion
 
-Existenz proposes that the recognition of a human existence can be encoded in a monetary protocol: equal issuance for every person, capped accumulation, melting that rewards circulation, and a global fund that recycles excess into emergency solidarity. It is not a savings vehicle and does not aim to be one; it aims to be a helping hand toward daily basic needs for every human, anywhere. The founding rules are simple; the hard problems, identity without surveillance, value without borders, melting without punishing the poor, subsistence without connectivity, without a phone and without any physical credential, honest merchant liquidity without fund abuse or chain fraud, even a year away from the network, a fund honestly bounded as a public service rather than disguised as a universal exchange, a parameterized bridge from subsistence to universal income, an account of credit outside the protocol that protects the issuance stream without pretending to abolish its gray market, and an honest account of the system's structural limits, are addressed by the annex protocols and by Section 11 of this paper, whose parameters remain under the two-thirds governance of
-the very people the currency exists to serve.
+**The proposal in one line.** Existenz proposes that the recognition of a human existence can be encoded in a monetary protocol: equal issuance for every person, capped accumulation, melting that rewards circulation, and a global fund that recycles excess into emergency solidarity.
+
+**What it is, and what it is not.** It is not a savings vehicle and does not aim to be one; it aims to be a helping hand toward daily basic needs for every human, anywhere.
+
+**The founding rules are simple.** The hard problems are not: identity without surveillance; value without borders; melting without punishing the poor; subsistence without connectivity, without a phone and without any physical credential; honest merchant liquidity without fund abuse or chain fraud, even a year away from the network; a fund honestly bounded as a public service rather than disguised as a universal exchange; a parameterized bridge from subsistence to universal income; an account of credit outside the protocol that protects the issuance stream without pretending to abolish its gray market; and an honest account of the system's structural limits.
+
+**How they are addressed.** These problems are addressed by the annex protocols and by Section 11 of this paper, whose parameters remain under the two-thirds governance of the very people the currency exists to serve.
 
 # Annex A - Robust Human Uniquity Protocol (RHUP)
 
