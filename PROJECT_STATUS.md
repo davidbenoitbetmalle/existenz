@@ -15,21 +15,6 @@ of the white paper. This page is updated as the project progresses.
   conversion, roughly 1,750 B USD per year, about 1.7% of world GDP; pilot of
   100,000 people at roughly 22 M USD per year, about 220 USD per person.
 
-## Where the code will live
-
-This repository is the home of the future builds, not only of the paper. The
-sequence follows the roadmap of Section 10:
-
-- `prototype/`: executable models of isolated components (melting mechanics,
-  day-chain, BNB index sampling), so that parameters become measurable.
-- `src/`: the reference implementation of the protocol (Annexes A to F).
-- `tests/`: specifications-as-code and test suites.
-
-Prototyping will start with the components whose parameters are reasoned
-rather than measured: melting (Annex C), the day-chain (E.11) and the BNB
-index sampling (Annex B). Pull requests touching these directories will be
-linked to the annex they implement.
-
 ## What is specified but not yet built
 
 - No reference implementation exists. The protocol is a design document.
@@ -63,9 +48,9 @@ linked to the annex they implement.
 - A governance specialist to critique the merchant voting design (Annex D).
 - Field partners (humanitarian operators, complementary currency networks)
   for a bounded pilot, far below the 100,000-person scale of Annex G.
-- Developers for the prototype phase: the first code contributions will be
-  executable models of the melting mechanics, the day-chain and the BNB
-  index sampling, one component per pull request.
+- Developers, when the specification has been sufficiently challenged: the
+  first code contributions will be executable models of the melting
+  mechanics, the day-chain and the BNB index sampling.
 - Readers willing to attack the document: open an issue per weakness found.
   Critique is the most valuable first contribution.
 
