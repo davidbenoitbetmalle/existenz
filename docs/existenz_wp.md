@@ -50,7 +50,7 @@ Existenz translates this principle into a monetary protocol:
 - Non-accumulation: the currency cannot become an instrument of structural domination, because holdings above the cap melt or are transferred to the global fund.
 - Universality: the protocol operates at global scale, unconstrained by nationality or residence.
 
-The project also stands in the lineage of monetary thinkers such as Silvio Gesell (Freigeld, stampscrip), the WIR complementary currency in Switzerland, and contemporary universal basic income experiments. Existenz differs from a classic UBI in that it does not transfer existing national money; it issues a dedicated instrument whose properties prevent hoarding and encourage circulation, closer to a barter-like exchange medium than to savings.
+The project also stands in the lineage of monetary thinkers such as Silvio Gesell (Freigeld, stampscrip), the WIR complementary currency in Switzerland, and contemporary universal basic income experiments. Gesell is invoked here for one idea only, the carrying cost on idle money; the social-darwinist passages of his 1916 preface are rejected without reservation (see the note in the references). Existenz differs from a classic UBI in that it does not transfer existing national money; it issues a dedicated instrument whose properties prevent hoarding and encourage circulation, closer to a barter-like exchange medium than to savings.
 
 # 3. Problem Statement
 
@@ -667,7 +667,7 @@ A future extension would be verified lenders operating inside the protocol, conv
 
 # References and Lineage
 - Universal Declaration of Human Rights, Articles 3, 22 and 25.
-- Silvio Gesell, The Natural Economic Order (Freigeld and stampscrip theory).
+- Silvio Gesell, The Natural Economic Order (Freigeld and stampscrip theory). Cited for the demurrage insight only. The social-darwinist vocabulary of the 1916 preface and the racial ambiguities of some of his era's writings are rejected without reservation; nothing in this paper is borrowed from that part of his work.
 - WIR Bank complementary currency system, Switzerland.
 - David Chaum, blind signature offline e-cash (basis of the pre-issued credential design).
 - Cancelable biometrics literature (basis of the salted, day-bound embedding hashes).
