@@ -1,0 +1,8 @@
+[package]
+name = "exz-core"
+description = "Deterministic rules engine of the Existenz protocol (executable specification)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]

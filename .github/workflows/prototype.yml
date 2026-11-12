@@ -1,0 +1,22 @@
+name: Prototype CI
+
+on:
+  push:
+    paths: ['prototype/**']
+  pull_request:
+    paths: ['prototype/**']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Run the exz-core rule tests
+        run: cargo test --manifest-path prototype/Cargo.toml
+      - name: Build and run a short simulation
+        run: |
+          cargo run --release --manifest-path prototype/Cargo.toml -p exz-sim -- \
+            --days 14 --seed 7 --out ./out
+          test -s out/exz_sim.csv
+          test -s out/exz_sim.svg

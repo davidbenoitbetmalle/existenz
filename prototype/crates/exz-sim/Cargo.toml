@@ -1,0 +1,13 @@
+[package]
+name = "exz-sim"
+description = "Multi-zone simulation of the Existenz protocol (Annex G solvency model)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "exz-sim"
+path = "src/main.rs"
+
+[dependencies]
+exz-core = { path = "../exz-core" }
