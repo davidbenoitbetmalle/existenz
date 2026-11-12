@@ -5,8 +5,8 @@ Usage: python3 scripts/build_site.py docs/existenz_wp.md index.html
 
 The script is dependency-free (standard library only) so it runs both locally
 and in GitHub Actions. It produces one self-contained index.html: fixed
-left-side table of contents, sticky title banner with breadcrumb, inline CSS,
-no external assets.
+left-side table of contents, sticky title banner with breadcrumb and tagline,
+inline CSS, no external assets.
 """
 import html
 import re
@@ -72,13 +72,14 @@ def parse_markdown(text):
     return blocks
 
 
-CSS = """:root{--ink:#1a2333;--muted:#5a6578;--accent:#1f5fa8;--bg:#fdfdfb;--line:#e3e6ec;--max:860px;--navw:280px;--heroh:150px}
+CSS = """:root{--ink:#1a2333;--muted:#5a6578;--accent:#1f5fa8;--bg:#fdfdfb;--line:#e3e6ec;--max:860px;--navw:280px;--heroh:170px}
 *{box-sizing:border-box}
 body{margin:0;font-family:Georgia,'Times New Roman',serif;background:var(--bg);color:var(--ink);line-height:1.65;font-size:17px}
 .topbar{position:sticky;top:0;z-index:30;margin-left:var(--navw)}
 header.hero{background:var(--ink);color:#fff;padding:26px 24px 20px;text-align:center}
 header.hero h1{font-size:1.9rem;margin:0 0 6px;letter-spacing:.5px}
-header.hero p{margin:0 auto;max-width:640px;color:#c6cfdd;font-size:1rem;font-style:italic}
+header.hero p.subtitle{margin:0 auto;max-width:640px;color:#c6cfdd;font-size:1rem;font-style:italic}
+header.hero p.tagline{margin:10px auto 0;color:#9fc0ec;font-size:.88rem;font-style:italic}
 .crumbs{background:#141a29;color:#8fa2c0;padding:8px 24px;font-family:system-ui,sans-serif;font-size:.82rem;text-align:center}
 .crumbs a{color:#9fc0ec;text-decoration:none}
 .crumbs a:hover{color:#fff;text-decoration:underline}
@@ -108,15 +109,30 @@ main{padding:40px 24px 80px}
 }"""
 
 
+def strip_md(text):
+    """Remove markdown emphasis for plain rendering in the hero."""
+    return re.sub(r"\*+", "", text).strip()
+
+
 def build(blocks):
-    # The first h1 is the paper title, the first h2 the subtitle; both go to the hero.
+    # The first h1 is the paper title, the first h2 the subtitle, and the
+    # first paragraph (if it appears before any other heading) the tagline.
     title = next(c for k, c in blocks if k == "h1")
     subtitle = next(c for k, c in blocks if k == "h2")
+    tagline = ""
+    for k, c in blocks:
+        if k == "p":
+            tagline = strip_md(c)
+            break
+        if k in ("h1", "h2"):
+            continue
+        if k == "h3":
+            break
 
     body = []
     toc = []
     sid = 0
-    seen_hero = {"h1": False, "h2": False}
+    seen_hero = {"h1": False, "h2": False, "p": False}
     for kind, content in blocks:
         if kind == "h1":
             if not seen_hero["h1"]:
@@ -132,12 +148,16 @@ def build(blocks):
             sid += 1
             body.append(f'<h2 id="s{sid}">{html.escape(content)}</h2>')
             toc.append((2, content, f"s{sid}"))
+        elif kind == "p":
+            if not seen_hero["p"] and not tagline == "":
+                if strip_md(content) == tagline:
+                    seen_hero["p"] = True
+                    continue  # tagline goes to the hero
+            body.append(f"<p>{content}</p>")
         elif kind == "h3":
             body.append(f"<h3>{html.escape(content)}</h3>")
         elif kind == "li":
             body.append(f"<li>{content}</li>")
-        elif kind == "p":
-            body.append(f"<p>{content}</p>")
         elif kind == "table":
             rows = content
             t = "<table><thead><tr>" + "".join(
@@ -151,6 +171,7 @@ def build(blocks):
     toc_html = "".join(
         f'<li class="lvl{n}"><a href="#{a}">{html.escape(t)}</a></li>'
         for n, t, a in toc)
+    tagline_html = f'<p class="tagline">{html.escape(tagline)}</p>' if tagline else ""
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -166,7 +187,7 @@ def build(blocks):
 <body>
 <nav><details open><summary>Table of contents</summary><ul>{toc_html}</ul></details></nav>
 <div class="topbar">
-<header class="hero"><h1>{html.escape(title)}</h1><p>{html.escape(subtitle)}</p></header>
+<header class="hero"><h1>{html.escape(title)}</h1><p class="subtitle">{html.escape(strip_md(subtitle))}</p>{tagline_html}</header>
 <div class="crumbs"><a href="{REPO_URL}">GitHub repository</a><span class="sep">/</span><a href="{DISCUSSION_URL}">Discussion: where this paper is most likely to be wrong</a></div>
 </div>
 <main>{main_html}</main>
