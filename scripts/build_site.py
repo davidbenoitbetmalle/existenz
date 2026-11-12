@@ -85,7 +85,7 @@ def inline(text):
     out = re.sub(r"(?<![\w*])\*([^*\n]+?)\*(?![\w*])", r"<em>\1</em>", out)
     # bold lead-in labels: "Label: rest" with a short label, only at the start
     m = re.match(r"^([A-Z][^:]{2,48}):(\s+|$)", out)
-    if m:
+    if m and '"' not in m.group(1):
         out = f"<strong>{m.group(1)}:</strong>" + out[m.end(1) + 1:]
     return out
 
