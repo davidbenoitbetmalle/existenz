@@ -14,10 +14,18 @@ of the white paper. This page is updated as the project progresses.
 - An order-of-magnitude solvency model (Annex G): at 60% utilization and 80%
   conversion, roughly 1,750 B USD per year, about 1.7% of world GDP; pilot of
   100,000 people at roughly 22 M USD per year, about 220 USD per person.
+- A rules-engine prototype and multi-zone simulation (`prototype/`): the
+  monetary rules as an executable specification, 24 tests, zero dependencies,
+  integer-only. The Annex G.1 pilot projection is verified by simulation
+  within 0.7%, and the solidarity scale rule (proposed revision of Annex
+  F.4: soft table cap, zone cover quota, accelerated overshoot melting) is
+  implemented and simulated. See [prototype/README.md](prototype/README.md).
 
 ## What is specified but not yet built
 
-- No reference implementation exists. The protocol is a design document.
+- No reference implementation of the full protocol exists. The prototype
+  covers the monetary rules only: no identity, no cryptography, no ledger,
+  no networking.
 - RHUP (Annex A) specifies an identity web of trust, liveness attestations
   and zero-knowledge credentials; no cryptographic implementation, even
   prototypical, has been written or audited.
