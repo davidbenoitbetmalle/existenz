@@ -17,7 +17,10 @@ Rust workspace with two crates and zero external dependencies:
   where the solidarity scale rule visibly throttles counting), deterministic
   seeded RNG, daily spend/circuit/convert loop, CSV and SVG outputs, and a
   stdout summary that compares the effective per-person-per-year payout
-  against the Annex G.1 projection.
+  against the Annex G.1 projection. In world fabric mode (`--world`), zones
+  are generated from real country data (population, FAO undernourishment
+  prevalence): 170 countries, 426 zones, 2.1M simulated agents representing
+  7.87 billion people on a laptop.
 
 What this is NOT: not a blockchain, not a ledger, no cryptography, no
 identity, no networking, no wallet UI. The white paper remains the source of
@@ -32,6 +35,12 @@ cargo test --manifest-path prototype/Cargo.toml
 # run the 90-day, 4-zone simulation (release build recommended: 100k persons)
 cargo run --release --manifest-path prototype/Cargo.toml -p exz-sim -- \
   --days 90 --seed 1 --out ./out
+
+# natural-scale run: 170 countries -> 426 zones, 2.1M simulated agents
+# representing 7.87B people; lower --agents-per-zone on small machines
+cargo run --release --manifest-path prototype/Cargo.toml -p exz-sim -- \
+  --days 90 --seed 1 --world prototype/world/world_fabric.csv \
+  --agents-per-zone 5000 --out ./out_world
 ```
 
 Outputs land in `out/`:
@@ -107,6 +116,69 @@ in r. So the tables do not throttle a zone when
 fabric (1500 merchants) passes, which is why its payout still matches the
 G.1 projection. Too few, too-large tables silently tax the whole zone.
 
+## The world fabric: a natural-scale test bed
+
+`exz-sim --world` turns the four hand-made zones into a planet: it reads
+`world/world_fabric.csv` (real population and FAO prevalence of
+undernourishment per country, latest year, via Our World in Data, CC BY; see
+`world/SOURCES.md`) and generates one zone per ~25M-person chunk of each
+country. Each zone is:
+
+- **classed by its country's PoU**, which sets the solidarity table P_max
+  (revised F.4) and a utilization band for u (u ramps with PoU inside the
+  class band; the band itself is an assumption pending field data),
+- **endowed as a rollout stage**: 55% of zones at full projected coverage,
+  15% at 75%, 20% at 50%, 10% at 30% (the ration queue does visible work),
+- **stocked with merchants by the structural density rule**
+  M >= N x u / (r* x P_max) with r* solved from tanh(r*)/r* = v, then a
+  health factor in [0.6, 1.6]: about a third of fabrics are deliberately
+  under-tabled, and pay for it,
+- **a scaled replica**: ~5000 simulated agents per zone, each standing for
+  its share of the real population chunk; totals are scaled back to the
+  represented population for reporting.
+
+Reference run (seed 1, 90 days, 426 zones, 2,130,000 agents, 7.87B people
+represented, ~43 s within 1 GB):
+
+| Class | Zones | People | P_max | Effective vs projected (USD/p/yr) | G.1 invariant |
+| --- | --- | --- | --- | --- | --- |
+| stable | 200 | 3.65B | 100 | 68.42 vs 91.73 | 84/84 |
+| vulnerable | 151 | 2.93B | 60 | 123.19 vs 170.58 | 49/49 |
+| alarming | 51 | 0.90B | 40 | 185.98 vs 248.19 | 19/19 |
+| critical | 24 | 0.38B | 30 | 215.04 vs 308.34 | 8/8 |
+
+Planetary, scaled: 861.2 B USD/year actually paid, against 1177.2 B USD/year
+if every zone were fully endowed (the gap is the ration working on the 45%
+of zones in partial rollout). Cross-check with the paper: Annex G's
+1,750 B USD/year assumes uniform u = 0.60; this fabric's PoU-weighted
+utilization is u_eff = 0.415, and 1750 x 0.415/0.60 = 1210 B, consistent
+with the 1177 B full-coverage projection.
+
+World-fabric findings, honestly:
+
+1. **The G.1 invariant holds zone by zone where it must**: on every
+   fully-endowed, comfortably dense zone, the effective payout stays within
+   15% of the Annex G.1 projection (160/160 at seed 1, 153/153 at seed 2,
+   152/152 at seed 3; worst deviation 7.3%, Somalia). Class averages sit
+   below projection because they mix in the under-endowed and under-tabled
+   zones, by construction.
+2. **Zone cover quotas never bind when set by the rule** (Q = N x u): the
+   quota is the anti-capture backstop; everyday bounding is done by the
+   tanh table caps (312k to 653k cap events per class over 90 days) and by
+   the ration queue.
+3. **Under-tabled fabrics pay.** Zones whose merchant count falls below the
+   density rule melt settlement credit continuously through the overshoot
+   rule (2.5 to 17.4 B EXZ per class over 90 days, scaled): the accelerated
+   melting acts as a real tax on fabrics that try to concentrate the flow in
+   too few tables.
+4. **Replica guard**: zones whose density ratio resolves to fewer than 8
+   merchants are floored to 8, because a one-merchant replica is a monopoly
+   artifact a real fabric would not have. With FAO's PoU floor of 2.5% no
+   zone in the current fabric triggers it; it is a guard, not a lever.
+5. **Machine limits, stated**: 2.13M agents in ~43 s within a 1 GB cgroup;
+   4.26M agents (10k per zone) exceed it. Scaling is linear in agents x
+   days; the engine itself is unchanged and the 24 rule tests are untouched.
+
 ## What the simulation showed (honest findings)
 
 1. **The Annex G.1 projection holds at pilot scale.** With N = 100,000,
@@ -177,5 +249,10 @@ G.1 projection. Too few, too-large tables silently tax the whole zone.
 - Adversarial actors against the scale rule: cover-splitting across
   sub-merchants, recycled unique visitors, quota-band gaming via conversion
   order.
+- Shock scenarios on the world fabric: famine (u doubles locally), food
+  price spike, merchant die-off, refugee influx; multi-seed statistical
+  acceptance in CI.
+- Regional meal prices from the cost-of-a-healthy-diet data instead of the
+  uniform Annex G meal price.
 - Revision of Annex F.4 in the white paper itself, pending review: the
   implemented rule is the working proposal, the paper text is unchanged.

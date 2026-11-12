@@ -20,3 +20,10 @@ jobs:
             --days 14 --seed 7 --out ./out
           test -s out/exz_sim.csv
           test -s out/exz_sim.svg
+      - name: World fabric smoke test (natural scale)
+        run: |
+          cargo run --release --manifest-path prototype/Cargo.toml -p exz-sim -- \
+            --days 14 --seed 7 --world prototype/world/world_fabric.csv \
+            --agents-per-zone 2000 --out ./out_world
+          test -s out_world/exz_sim.csv
+          test -s out_world/exz_sim.svg
