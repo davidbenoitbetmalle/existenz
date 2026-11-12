@@ -1,5 +1,15 @@
 # Existenz: a Fair Global Currency
 
+## Start here
+
+**[Where this paper is most likely to be wrong: three open questions](https://github.com/davidbenoitbetmalle/existenz/discussions/1)**
+(planetary-scale identity, solvability arithmetic, melting parameters that
+have never been measured)
+
+This project's first need is not praise but objections. Read the
+[white paper](https://davidbenoitbetmalle.github.io/existenz/), then attack
+it in the discussion above.
+
 This repository holds the source and the published website of the Existenz
 (EXZ) white paper: a protocol-level proposal for a fair global virtual
 currency that recognizes every human existence, deliberately published with

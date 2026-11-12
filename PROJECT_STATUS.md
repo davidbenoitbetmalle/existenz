@@ -71,6 +71,6 @@ linked to the annex they implement.
 
 ## How to contribute
 
-Read the [white paper](https://davidbenoitbetmalle-bot.github.io/existenz/),
+Read the [white paper](https://davidbenoitbetmalle.github.io/existenz/),
 then open an issue or a pull request against `docs/existenz_wp.md`.
 See [CONTRIBUTING.md](CONTRIBUTING.md).
